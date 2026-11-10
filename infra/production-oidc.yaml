@@ -61,10 +61,10 @@ Resources:
                     iam:PassedToService: cloudformation.amazonaws.com
               - Effect: Allow
                 Action: s3:GetBucketLocation
-                Resource: arn:aws:s3:::camping-deploy-048834125079-us-east-1
+                Resource: arn:aws:s3:::maytu-deploy-048834125079-us-east-1
               - Effect: Allow
                 Action: [s3:GetObject, s3:PutObject]
-                Resource: arn:aws:s3:::camping-deploy-048834125079-us-east-1/production/*
+                Resource: arn:aws:s3:::maytu-deploy-048834125079-us-east-1/production/*
   CloudFormationRole:
     Type: AWS::IAM::Role
     Properties:
@@ -156,6 +156,7 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource:
+                  - arn:aws:s3:::maytu-deploy-048834125079-us-east-1/production/*
                   - arn:aws:s3:::camping-deploy-048834125079-us-east-1/production/*
                   - !Sub arn:aws:s3:::camping-deploy-048834125079-us-east-1/${CurrentArtifactKey}
               - Effect: Allow
