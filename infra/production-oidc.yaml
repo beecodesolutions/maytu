@@ -35,7 +35,7 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: repo:beecodesolutions@193028516/camping@1377905327:environment:Production
+                token.actions.githubusercontent.com:sub: repo:beecodesolutions@193028516/maytu@1377905327:environment:Production
       Policies:
         - PolicyName: ExistingProductionDeployment
           PolicyDocument:

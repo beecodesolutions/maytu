@@ -10,7 +10,7 @@ Frontend: https://www.maytu.app (`https://maytu.app` redirects to the canonical 
 
 ## Publish API
 
-Authenticate with AWS CLI 2.32+ using `aws login --profile camping`. Check account identity before writes. Run `pnpm package:lambda` (Docker, zip, and unzip required), which verifies the extracted ZIP and Node 24 async handler signature, then `aws cloudformation package` with `infra/template.yaml` and the private bucket `camping-deploy-048834125079-us-east-1`. Deploy the packaged template to `camping-production` with `CAPABILITY_IAM CAPABILITY_AUTO_EXPAND`, the canonical `AllowedOrigin`, and existing `DatabaseSecretArn`.
+Authenticate with AWS CLI 2.32+ using `aws login --profile beecode`. Check account identity before writes. Run `pnpm package:lambda` (Docker, zip, and unzip required), which verifies the extracted ZIP and Node 24 async handler signature, then `aws cloudformation package` with `infra/template.yaml` and the private bucket `camping-deploy-048834125079-us-east-1`. Deploy the packaged template to `camping-production` with `CAPABILITY_IAM CAPABILITY_AUTO_EXPAND`, the canonical `AllowedOrigin`, and existing `DatabaseSecretArn`.
 
 No migrations or seeds run on Lambda startup. Set `NODE_EXTRA_CA_CERTS` to the absolute path of `api/certs/supabase-ca.crt`, `DATABASE_SSL=true`, and supply `DATABASE_ADMIN_URL` privately for administration. Never put database passwords on the command line or in Git.
 
@@ -65,10 +65,10 @@ There are no seeds, automatic migration reverts or database rollback hooks.
    database backup/recovery procedure. Inspect current physical resources:
 
    ```sh
-   aws sts get-caller-identity --profile camping
-   aws cloudformation describe-stack-resources --profile camping --region us-east-1 --stack-name camping-production
-   aws cloudformation describe-stacks --profile camping --region us-east-1 --stack-name camping-production --query 'Stacks[0].Parameters'
-   aws cloudformation get-template --profile camping --region us-east-1 --stack-name camping-production --template-stage Original
+   aws sts get-caller-identity --profile beecode
+   aws cloudformation describe-stack-resources --profile beecode --region us-east-1 --stack-name camping-production
+   aws cloudformation describe-stacks --profile beecode --region us-east-1 --stack-name camping-production --query 'Stacks[0].Parameters'
+   aws cloudformation get-template --profile beecode --region us-east-1 --stack-name camping-production --template-stage Original
    ```
 
 2. Reuse the account IAM OIDC provider `https://token.actions.githubusercontent.com`
@@ -89,14 +89,14 @@ There are no seeds, automatic migration reverts or database rollback hooks.
    Example (shell variables below contain identifiers, never database passwords):
 
    ```sh
-   aws cloudformation deploy --profile camping --region us-east-1 \
+   aws cloudformation deploy --profile beecode --region us-east-1 \
      --stack-name camping-production-delivery \
      --template-file infra/production-oidc.yaml --capabilities CAPABILITY_IAM \
      --parameter-overrides OidcProviderArn="$OIDC_PROVIDER_ARN" \
        ApiFunctionName="$API_FUNCTION_NAME" ApiExecutionRoleName="$API_EXECUTION_ROLE_NAME" \
        HttpApiId="$HTTP_API_ID" DatabaseSecretArn="$DATABASE_SECRET_ARN" \
        CurrentArtifactKey="$CURRENT_ARTIFACT_KEY"
-   aws cloudformation describe-stacks --profile camping --region us-east-1 \
+   aws cloudformation describe-stacks --profile beecode --region us-east-1 \
      --stack-name camping-production-delivery --query 'Stacks[0].Outputs'
    ```
 
@@ -108,12 +108,12 @@ There are no seeds, automatic migration reverts or database rollback hooks.
    the dedicated service role to `camping-production`; later manual deployments
    must account for that persistent role association.
 
-4. Create GitHub Environment **production** in `beecodesolutions/camping` (the existing
+4. Create GitHub Environment **production** in `beecodesolutions/maytu` (the existing
    environment is displayed as **Production**, which the workflow reuses; GitHub
    environment names are case-insensitive). Restrict
    deployment branches to **main only**, with no matching tags. OIDC trust uses
    exact `aud=sts.amazonaws.com` and
-   `sub=repo:beecodesolutions@193028516/camping@1377905327:environment:Production`; with environments,
+   `sub=repo:beecodesolutions@193028516/maytu@1377905327:environment:Production`; with environments,
    branch restriction must also be enforced by environment protection. Set required
    reviewers if desired (that makes each automatic run wait for approval).
    Add environment variables `AWS_DEPLOY_ROLE_ARN` and `CF_EXECUTION_ROLE_ARN` from
@@ -192,7 +192,7 @@ Local verification uses `node --test scripts/test-production-delivery.cjs` (mock
 AWS and HTTP, no production access), `actionlint .github/workflows/production-api.yml`,
 `shellcheck scripts/production-stack.sh`, the configured Prettier/oxlint checks,
 and `pnpm package:lambda`. The workflow runs the safeguard tests before packaging.
-The first successful production execution is [run 40998797382, attempt 3](https://github.com/beecodesolutions/camping/actions/runs/40998797382/attempts/3),
+The first successful production execution is [run 40998797382, attempt 3](https://github.com/beecodesolutions/maytu/actions/runs/40998797382/attempts/3),
 for main SHA `3dfa9ec7770b0a2dddf1ff5f3fa1195b70993f60`. OIDC, migration check,
 runtime provisioning, publication, CloudFormation deployment and all HTTP checks
 passed. The stack finished `UPDATE_COMPLETE`, retaining its database secret,
@@ -201,7 +201,7 @@ production execution evidence.
 
 ### OIDC subject verification
 
-Before configuring trust, read `gh api repos/beecodesolutions/camping/actions/oidc/customization/sub`.
+Before configuring trust, read `gh api repos/beecodesolutions/maytu/actions/oidc/customization/sub`.
 This repository uses immutable subjects (`use_immutable_subject=true`), whose
 `sub_claim_prefix` includes the organization and repository IDs. Append
 `:environment:Production` to that exact prefix, preserving capitalization.
