@@ -35,6 +35,7 @@ const es = {
     occupiedBeds: '{{count}} camas reservadas',
     blockedBeds: '{{count}} camas bloqueadas',
     nightlyDetail: 'Detalle por noche',
+    nightlyDateRange: '{{start}} al {{end}} · {{count}} noches',
     allocatedBeds: 'Camas asignadas',
     pets: 'Mascotas',
     includeInsufficient: 'Incluir alojamientos con capacidad insuficiente',
