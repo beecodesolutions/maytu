@@ -17,10 +17,34 @@ import {
   reservationGuestGroups,
   reservationReviewDate,
 } from './reservations/review'
+import { addDays } from './services/calendar'
 import { formatMoney } from './services/money'
 import { uiProps, uiStyles } from './app/theme'
 
 type Breakdown = NonNullable<ReservationPriceSnapshot['breakdown']>
+
+type Night = Breakdown['nights'][number]
+
+function groupNightlyRates(nights: Night[]) {
+  const groups: { night: Night; endDate: string; count: number }[] = []
+  for (const night of nights.toSorted((a, b) => a.date.localeCompare(b.date))) {
+    const previous = groups.at(-1)
+    if (
+      previous &&
+      night.date === addDays(previous.endDate, 1) &&
+      night.baseMinor === previous.night.baseMinor &&
+      night.humanMinor === previous.night.humanMinor &&
+      night.petMinor === previous.night.petMinor
+    ) {
+      previous.endDate = night.date
+      previous.count++
+    } else {
+      groups.push({ night, endDate: night.date, count: 1 })
+    }
+  }
+  return groups
+}
+
 function ChargeRow({
   label,
   amount,
@@ -59,6 +83,9 @@ export default function ReservationTariffBreakdown({
   const price = quote.priceSnapshot
   const money = (amount: number) =>
     formatMoney(amount, price.currency, i18n.language)
+  const displayDate = (date: string) =>
+    reservationReviewDate(date, today, i18n.language)
+  const nightlyGroups = groupNightlyRates(breakdown.nights)
   const guests = reservationGuestGroups(quote.input)
   const pets = quote.input.pets ?? price.pets ?? 0
   const dailyDetail = (amounts: number[], quantity = 1): string => {
@@ -230,10 +257,16 @@ export default function ReservationTariffBreakdown({
         </AccordionSummary>
         <AccordionDetails>
           <Stack {...uiProps.stackForm}>
-            {breakdown.nights.map((night) => (
+            {nightlyGroups.map(({ night, endDate, count }) => (
               <Stack key={night.date} {...uiProps.stackSmall}>
                 <Typography variant="body2" sx={uiStyles.semiboldText}>
-                  {reservationReviewDate(night.date, today, i18n.language)}
+                  {count === 1
+                    ? displayDate(night.date)
+                    : t('pricing.nightlyDateRange', {
+                        start: displayDate(night.date),
+                        end: displayDate(endDate),
+                        count,
+                      })}
                 </Typography>
                 {price.basis !== 'per_person' && (
                   <ChargeRow

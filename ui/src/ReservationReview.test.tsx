@@ -208,6 +208,37 @@ it('shows actual nightly variation instead of a misleading constant-rate formula
   expect(html).toContain('antes del descuento por bloques')
 })
 
+it('groups only consecutive nights with matching charges in chronological order', () => {
+  const breakdown = unitBreakdownQuote.priceSnapshot.breakdown
+  const firstNight = breakdown.nights[0]
+  const varied = {
+    ...unitBreakdownQuote,
+    priceSnapshot: {
+      ...unitBreakdownQuote.priceSnapshot,
+      nights: 6,
+      breakdown: {
+        ...breakdown,
+        nights: [
+          { ...firstNight, date: '2026-11-04' },
+          { ...firstNight, date: '2026-10-31' },
+          { ...firstNight, date: '2026-11-02', petMinor: 20000 },
+          { ...firstNight, date: '2026-11-01' },
+          firstNight,
+          { ...firstNight, date: '2026-11-06' },
+        ],
+      },
+    },
+  } satisfies CreationQuote
+  const html = renderToStaticMarkup(
+    <ReservationReview quote={varied} today="2026-10-30" />,
+  )
+  expect(html).toMatch(
+    /30 de octubre al 1 de noviembre · 3 noches.*2 de noviembre.*4 de noviembre.*6 de noviembre/,
+  )
+  expect(html).not.toContain('31 de octubre')
+  expect(html).not.toContain('4 de noviembre al 6 de noviembre')
+})
+
 it('identifies per-bed fixed-price block discounts and the number of reserved beds', () => {
   const bed = {
     ...unitBreakdownQuote,
