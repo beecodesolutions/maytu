@@ -6,10 +6,10 @@ Parameters:
     Description: Existing account OIDC provider for token.actions.githubusercontent.com, audience sts.amazonaws.com
   ApiFunctionName:
     Type: String
-    AllowedPattern: 'camping-production-Api-[a-zA-Z0-9]+'
+    AllowedPattern: 'maytu-production-Api-[a-zA-Z0-9]+'
   ApiExecutionRoleName:
     Type: String
-    AllowedPattern: 'camping-production-ApiRole-[a-zA-Z0-9]+'
+    AllowedPattern: 'maytu-production-ApiRole-[a-zA-Z0-9]+'
   HttpApiId:
     Type: String
     AllowedPattern: '[a-z0-9]+'
@@ -48,7 +48,7 @@ Resources:
                   - cloudformation:DescribeChangeSet
                   - cloudformation:ExecuteChangeSet
                 Resource:
-                  - !Sub arn:${AWS::Partition}:cloudformation:us-east-1:${AWS::AccountId}:stack/camping-production/*
+                  - !Sub arn:${AWS::Partition}:cloudformation:us-east-1:${AWS::AccountId}:stack/maytu-production/*
                   - !Sub arn:${AWS::Partition}:cloudformation:us-east-1:${AWS::AccountId}:changeSet/github-*/*
               - Effect: Allow
                 Action: cloudformation:CreateChangeSet
@@ -157,8 +157,7 @@ Resources:
                 Action: s3:GetObject
                 Resource:
                   - arn:aws:s3:::maytu-deploy-048834125079-us-east-1/production/*
-                  - arn:aws:s3:::camping-deploy-048834125079-us-east-1/production/*
-                  - !Sub arn:aws:s3:::camping-deploy-048834125079-us-east-1/${CurrentArtifactKey}
+                  - !Sub arn:aws:s3:::maytu-deploy-048834125079-us-east-1/${CurrentArtifactKey}
               - Effect: Allow
                 Action: secretsmanager:GetSecretValue
                 Resource: !Ref DatabaseSecretArn

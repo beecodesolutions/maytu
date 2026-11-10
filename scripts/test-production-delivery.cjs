@@ -54,7 +54,7 @@ elif args[1]=='describe-change-set':
       PATH: `${join(dir, 'bin')}:${process.env.PATH}`,
       CALLS: join(dir, 'calls'),
       SCENARIO: scenario,
-      STACK_NAME: 'camping-production',
+      STACK_NAME: 'maytu-production',
       AWS_REGION: 'us-east-1',
       CF_EXECUTION_ROLE_ARN: 'arn:aws:iam::048834125079:role/test',
       GITHUB_RUN_ID: '123',

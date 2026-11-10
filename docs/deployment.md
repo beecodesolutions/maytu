@@ -1,16 +1,16 @@
-# Camping production
+# Maytu production
 
 Frontend: https://www.maytu.app (`https://maytu.app` redirects to the canonical `www` origin).
 
-- Vercel project `camping`, root directory `ui`, Hobby plan. Production `VITE_ENABLE_MOCKS=false`; API defaults to `/api`.
+- Vercel project `maytu`, root directory `ui`, Hobby plan. Production `VITE_ENABLE_MOCKS=false`; API defaults to `/api`.
 - `ui/vercel.json` proxies `/api` to API Gateway and falls back to the SPA. Login requires the canonical frontend origin above; set CloudFormation `AllowedOrigin=https://www.maytu.app` so Lambda origin validation and API Gateway CORS agree.
-- AWS account `048834125079`, region `us-east-1`, CloudFormation stack `camping-production`. Use named CLI profile `camping`; never the workstation default profile.
+- AWS account `048834125079`, region `us-east-1`, CloudFormation stack `maytu-production`. Use named CLI profile `beecode`; never the workstation default profile.
 - Supabase Free project `xpnleaxbatypnbbwzeku`, region `us-east-1`. Private schema `camping_private`; TLS enforced. Runtime uses restricted `camping_runtime` through transaction pooler port 6543; administration uses session pooler port 5432.
 - Database URL is in AWS Secrets Manager `camping/production/database`, never Vercel or Git. Public database CA is bundled in Lambda; see `api/certs/README.md`.
 
 ## Publish API
 
-Authenticate with AWS CLI 2.32+ using `aws login --profile beecode`. Check account identity before writes. Run `pnpm package:lambda` (Docker, zip, and unzip required), which verifies the extracted ZIP and Node 24 async handler signature, then `aws cloudformation package` with `infra/template.yaml` and the private bucket `camping-deploy-048834125079-us-east-1`. Deploy the packaged template to `camping-production` with `CAPABILITY_IAM CAPABILITY_AUTO_EXPAND`, the canonical `AllowedOrigin`, and existing `DatabaseSecretArn`.
+Authenticate with AWS CLI 2.32+ using `aws login --profile beecode`. Check account identity before writes. Run `pnpm package:lambda` (Docker, zip, and unzip required), which verifies the extracted ZIP and Node 24 async handler signature, then `aws cloudformation package` with `infra/template.yaml` and the private bucket `maytu-deploy-048834125079-us-east-1`. Deploy the packaged template to `maytu-production` with `CAPABILITY_IAM CAPABILITY_AUTO_EXPAND`, the canonical `AllowedOrigin`, and existing `DatabaseSecretArn`.
 
 No migrations or seeds run on Lambda startup. Set `NODE_EXTRA_CA_CERTS` to the absolute path of `api/certs/supabase-ca.crt`, `DATABASE_SSL=true`, and supply `DATABASE_ADMIN_URL` privately for administration. Never put database passwords on the command line or in Git.
 
@@ -37,7 +37,7 @@ AWS paid account had $100 signup credits at deployment; no paid upgrades were se
 ## Automatic production API deployment
 
 `.github/workflows/production-api.yml` runs on every push to `main` and via
-`workflow_dispatch` on `main` only. A single `camping-production` concurrency group
+`workflow_dispatch` on `main` only. A single `maytu-production` concurrency group
 covers installation, packaging, database changes, publication, deployment and HTTP
 checks; `cancel-in-progress: false` preserves an active run. GitHub keeps at most
 one pending run per group and may supersede older pending runs; it does not promise
@@ -66,16 +66,16 @@ There are no seeds, automatic migration reverts or database rollback hooks.
 
    ```sh
    aws sts get-caller-identity --profile beecode
-   aws cloudformation describe-stack-resources --profile beecode --region us-east-1 --stack-name camping-production
-   aws cloudformation describe-stacks --profile beecode --region us-east-1 --stack-name camping-production --query 'Stacks[0].Parameters'
-   aws cloudformation get-template --profile beecode --region us-east-1 --stack-name camping-production --template-stage Original
+   aws cloudformation describe-stack-resources --profile beecode --region us-east-1 --stack-name maytu-production
+   aws cloudformation describe-stacks --profile beecode --region us-east-1 --stack-name maytu-production --query 'Stacks[0].Parameters'
+   aws cloudformation get-template --profile beecode --region us-east-1 --stack-name maytu-production --template-stage Original
    ```
 
 2. Reuse the account IAM OIDC provider `https://token.actions.githubusercontent.com`
    with audience `sts.amazonaws.com`, or create it once if absent. Do not duplicate
    a provider that other repositories use. `infra/production-oidc.yaml` creates two
    separate roles: GitHub can publish to the existing bucket's `production/` prefix
-   and operate change sets on `camping-production`; CloudFormation can update the
+   and operate change sets on `maytu-production`; CloudFormation can update the
    exact existing function, Lambda role, HTTP API and log group, and resolve only
    the existing runtime database secret. The GitHub role cannot read that secret
    or assume the CloudFormation role directly. No permanent AWS keys are required.
@@ -90,14 +90,14 @@ There are no seeds, automatic migration reverts or database rollback hooks.
 
    ```sh
    aws cloudformation deploy --profile beecode --region us-east-1 \
-     --stack-name camping-production-delivery \
+     --stack-name maytu-production-delivery \
      --template-file infra/production-oidc.yaml --capabilities CAPABILITY_IAM \
      --parameter-overrides OidcProviderArn="$OIDC_PROVIDER_ARN" \
        ApiFunctionName="$API_FUNCTION_NAME" ApiExecutionRoleName="$API_EXECUTION_ROLE_NAME" \
        HttpApiId="$HTTP_API_ID" DatabaseSecretArn="$DATABASE_SECRET_ARN" \
        CurrentArtifactKey="$CURRENT_ARTIFACT_KEY"
    aws cloudformation describe-stacks --profile beecode --region us-east-1 \
-     --stack-name camping-production-delivery --query 'Stacks[0].Outputs'
+     --stack-name maytu-production-delivery --query 'Stacks[0].Outputs'
    ```
 
    This template intentionally supports updates to existing resources, not general
@@ -105,7 +105,7 @@ There are no seeds, automatic migration reverts or database rollback hooks.
    review of the template and IAM scope. If the bucket or secret uses a custom KMS
    key, add only the required key-scoped permissions after reviewing its policy;
    this baseline assumes the existing default encryption. The deployment attaches
-   the dedicated service role to `camping-production`; later manual deployments
+   the dedicated service role to `maytu-production`; later manual deployments
    must account for that persistent role association.
 
 4. Create GitHub Environment **production** in `beecodesolutions/maytu` (the existing
