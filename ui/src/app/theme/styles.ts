@@ -704,6 +704,11 @@ export const uiStyles = {
     justifyContent: 'flex-end',
     flexShrink: 0,
   } satisfies SxProps<Theme>,
+  inlineActionLink: {
+    px: 0,
+    textDecoration: 'underline',
+    '&:hover': { textDecoration: 'underline' },
+  } satisfies SxProps<Theme>,
   reservationRowIconButton: {
     width: 44,
     height: 44,
@@ -833,7 +838,6 @@ export const uiStyles = {
   campingWorkspaceButton2: {
     textDecoration: 'underline',
   } satisfies SxProps<Theme>,
-  settingsPanelDivider: { my: 2 } satisfies SxProps<Theme>,
   templateRowBox: {
     ...formGridStyles,
     gridTemplateColumns: {

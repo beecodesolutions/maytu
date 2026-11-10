@@ -10,7 +10,11 @@ import { scrollWorkspaceToTop } from './app/workspaceScroll'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -32,7 +36,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { Pencil, Plus, RotateCcw, Settings, Trash2 } from 'lucide-react'
+import { ChevronDown, Pencil, Plus, RotateCcw, Settings, Trash2 } from 'lucide-react'
 import LucideIcon from './components/LucideIcon'
 import MoneyField from './components/MoneyField'
 import { paymentInputSchema } from '@camping/contracts'
@@ -1399,13 +1403,11 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
   const [tab, setTab] = useState<'accommodations' | 'general' | 'extras'>(
     'accommodations',
   )
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const [inlineCategory, setInlineCategory] = useState<string | null>(null)
   const templates = useExtraTemplatesQuery()
-  const [create, createState] = useCreateExtraTemplateMutation()
   const [update] = useUpdateExtraTemplateMutation()
   const [updateRates, ratesState] = useUpdateRatesMutation()
-  const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('')
-  const [unitPriceMinor, setUnitPriceMinor] = useState(0)
   const [rates, setRates] = useState(profile.rates)
   const [editingRate, setEditingRate] = useState<
     keyof typeof profile.rates | null
@@ -1413,21 +1415,6 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
   const [moneyDecimals, setMoneyDecimals] = useState(profile.moneyDecimals)
   const [updateMoneySettings, moneyState] = useUpdateMoneySettingsMutation()
   const [error, setError] = useState('')
-  const saveTemplate = async () => {
-    if (!description.trim()) return
-    try {
-      await create({
-        category,
-        description: description.trim(),
-        unitPriceMinor,
-      }).unwrap()
-      setDescription('')
-      setCategory('')
-      setUnitPriceMinor(0)
-    } catch {
-      setError(t('settings.saveError'))
-    }
-  }
   const saveRates = async () => {
     try {
       setError('')
@@ -1640,74 +1627,180 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
         aria-labelledby="settings-extras-tab"
         hidden={tab !== 'extras'}
       >
-        <Paper variant="outlined" sx={uiStyles.panelPadding}>
-          <Typography variant="h6">{t('settings.templates')}</Typography>
-          <Stack
-            {...uiProps.stackSection}
-            divider={<Divider />}
-            sx={uiStyles.topGap}
-          >
-            {templates.isError && (
-              <Alert severity="error">{t('settings.loadError')}</Alert>
-            )}
-            {categories.map((category) => (
-              <Stack key={category} {...uiProps.stackSmall}>
-                <Typography
-                  variant="h3"
-                >
-                  {category || t('settings.uncategorized')}
-                </Typography>
-                {extrasByCategory.get(category)?.map((template) => (
-                  <TemplateRow
-                    key={template.id}
-                    template={template}
-                    currency={profile.currency}
-                    moneyDecimals={profile.moneyDecimals}
-                    onSave={update}
-                  />
-                ))}
-              </Stack>
-            ))}
-          </Stack>
-          <Divider sx={uiStyles.settingsPanelDivider} />
-          <Box sx={uiStyles.formGrid}>
-            <TextField
-              label={t('stay.category')}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
-            <TextField
-              label={t('stay.description')}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <MoneyField
-              label={t('stay.unitPrice')}
-              currency={profile.currency}
-              moneyDecimals={profile.moneyDecimals}
-              valueMinor={unitPriceMinor}
-              onChangeMinor={(value) =>
-                setUnitPriceMinor(value === '' ? NaN : value)
-              }
-            />
-            <Button
-              variant="outlined"
-              onClick={() => void saveTemplate()}
-              disabled={
-                createState.isLoading ||
-                !description.trim() ||
-                !Number.isSafeInteger(unitPriceMinor) ||
-                unitPriceMinor < 0
-              }
-            >
-              {t('settings.createTemplate')}
-            </Button>
-          </Box>
-        </Paper>
+        <Stack {...uiProps.stackSection}>
+          <Paper variant="outlined" sx={uiStyles.panelPadding}>
+            <CreateExtraForm profile={profile} categories={categories} />
+          </Paper>
+          <Paper variant="outlined" sx={uiStyles.panelPadding}>
+            <Typography variant="h6">{t('settings.templates')}</Typography>
+            <Stack {...uiProps.stackStandard} sx={uiStyles.topGap}>
+              {templates.isError && (
+                <Alert severity="error">{t('settings.loadError')}</Alert>
+              )}
+              <Box>
+                {categories.map((category, index) => {
+                  const items = extrasByCategory.get(category) ?? []
+                  return (
+                    <Accordion
+                      key={category}
+                      disableGutters
+                      expanded={expandedCategory === category}
+                      onChange={(_, expanded) =>
+                        setExpandedCategory(expanded ? category : null)
+                      }
+                    >
+                      <AccordionSummary
+                        expandIcon={<LucideIcon icon={ChevronDown} />}
+                        id={`settings-extra-category-${index}`}
+                        aria-controls={`settings-extra-items-${index}`}
+                      >
+                        <Typography component="span" variant="h3">
+                          {category || t('settings.uncategorized')} ({items.length})
+                        </Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Stack {...uiProps.stackSmall}>
+                          {items.map((template) => (
+                            <TemplateRow
+                              key={template.id}
+                              template={template}
+                              currency={profile.currency}
+                              moneyDecimals={profile.moneyDecimals}
+                              onSave={update}
+                            />
+                          ))}
+                          {inlineCategory === category ? (
+                            <CreateExtraForm
+                              profile={profile}
+                              categories={categories}
+                              fixedCategory={category}
+                              onClose={() =>
+                                setInlineCategory((current) =>
+                                  current === category ? null : current,
+                                )
+                              }
+                            />
+                          ) : (
+                            <Box>
+                              <Button
+                                variant="text"
+                                color="primary"
+                                size="small"
+                                sx={uiStyles.inlineActionLink}
+                                onClick={() => setInlineCategory(category)}
+                              >
+                                + {t('settings.createTemplate')}
+                              </Button>
+                            </Box>
+                          )}
+                        </Stack>
+                      </AccordionDetails>
+                    </Accordion>
+                  )
+                })}
+              </Box>
+            </Stack>
+          </Paper>
+        </Stack>
       </Box>
     </Stack>
   )
 }
+function CreateExtraForm({
+  profile,
+  categories,
+  fixedCategory,
+  onClose,
+}: {
+  profile: CampingProfile
+  categories: string[]
+  fixedCategory?: string
+  onClose?: () => void
+}) {
+  const { t } = useTranslation()
+  const [create, createState] = useCreateExtraTemplateMutation()
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('')
+  const [unitPriceMinor, setUnitPriceMinor] = useState(0)
+  const [error, setError] = useState(false)
+  const saveTemplate = async () => {
+    if (!description.trim()) return
+    setError(false)
+    try {
+      await create({
+        category: fixedCategory ?? category.trim(),
+        description: description.trim(),
+        unitPriceMinor,
+      }).unwrap()
+      setDescription('')
+      setCategory('')
+      setUnitPriceMinor(0)
+      onClose?.()
+    } catch {
+      setError(true)
+    }
+  }
+  return (
+    <Box sx={uiStyles.formGrid}>
+      {fixedCategory === undefined && (
+        <Autocomplete
+          freeSolo
+          forcePopupIcon
+          openOnFocus
+          options={categories.filter(Boolean)}
+          value={null}
+          inputValue={category}
+          onInputChange={(_, value, reason) => {
+            if (reason === 'input' || reason === 'clear') setCategory(value)
+          }}
+          onChange={(_, value) => setCategory(value ?? '')}
+          clearText={t('common.clear')}
+          openText={t('common.open')}
+          closeText={t('common.close')}
+          renderInput={(params) => (
+            <TextField {...params} label={t('stay.category')} />
+          )}
+        />
+      )}
+      <TextField
+        autoFocus={fixedCategory !== undefined}
+        label={t('stay.description')}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <MoneyField
+        label={t('stay.unitPrice')}
+        currency={profile.currency}
+        moneyDecimals={profile.moneyDecimals}
+        valueMinor={unitPriceMinor}
+        showCurrencyInInput
+        onChangeMinor={(value) =>
+          setUnitPriceMinor(value === '' ? NaN : value)
+        }
+      />
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => void saveTemplate()}
+        disabled={
+          createState.isLoading ||
+          !description.trim() ||
+          !Number.isSafeInteger(unitPriceMinor) ||
+          unitPriceMinor < 0
+        }
+      >
+        {t('settings.createTemplate')}
+      </Button>
+      {onClose && (
+        <Button onClick={onClose} disabled={createState.isLoading}>
+          {t('common.cancel')}
+        </Button>
+      )}
+      {error && <Alert severity="error">{t('settings.saveError')}</Alert>}
+    </Box>
+  )
+}
+
 function TemplateRow({
   template,
   currency,

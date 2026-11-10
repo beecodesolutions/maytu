@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TextField, type TextFieldProps } from '@mui/material'
+import { InputAdornment, TextField, type TextFieldProps } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import type { MoneyDecimals } from '@camping/contracts'
 import { moneyInputFromMinor, moneyInputToMinor } from '../services/moneyInput'
@@ -10,6 +10,7 @@ type Props = Omit<
 > & {
   valueMinor: number | ''
   currency: string
+  showCurrencyInInput?: boolean
   moneyDecimals?: MoneyDecimals
   onChangeMinor: (value: number | '') => void
 }
@@ -17,6 +18,7 @@ type Props = Omit<
 export default function MoneyField({
   valueMinor,
   currency,
+  showCurrencyInInput = false,
   moneyDecimals = null,
   onChangeMinor,
   helperText,
@@ -36,7 +38,9 @@ export default function MoneyField({
       }
       error={Boolean(error || invalid)}
       helperText={
-        invalid ? t('validation.money', { currency }) : (helperText ?? currency)
+        invalid
+          ? t('validation.money', { currency })
+          : (helperText ?? (showCurrencyInInput ? undefined : currency))
       }
       onFocus={() => {
         if (!invalid) setDraft(moneyInputFromMinor(valueMinor, currency))
@@ -50,6 +54,13 @@ export default function MoneyField({
         )
       }}
       slotProps={{
+        input: showCurrencyInInput
+          ? {
+              endAdornment: (
+                <InputAdornment position="end">{currency}</InputAdornment>
+              ),
+            }
+          : undefined,
         htmlInput: { inputMode: moneyDecimals === 0 ? 'numeric' : 'decimal' },
       }}
     />
