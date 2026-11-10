@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://i4kwwtvwtl.execute-api.us-east-1.amazonaws.com/api/:path*"
+      "destination": "https://b1buiepbx7.execute-api.us-east-1.amazonaws.com/api/:path*"
     },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

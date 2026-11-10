@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 : "${STACK_NAME:?}" "${CF_EXECUTION_ROLE_ARN:?}"
-[[ "$STACK_NAME" == camping-production && "${AWS_REGION:?}" == us-east-1 ]]
+[[ "$STACK_NAME" == maytu-production && "${AWS_REGION:?}" == us-east-1 ]]
 [[ "$CF_EXECUTION_ROLE_ARN" == arn:aws:iam::048834125079:role/* ]]
 mkdir -p .artifacts
 
