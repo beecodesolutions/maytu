@@ -2,6 +2,7 @@ import SectionCard from './components/SectionCard'
 import { useState } from 'react'
 import {
   Alert,
+  Box,
   Button,
   Checkbox,
   FormControlLabel,
@@ -187,71 +188,75 @@ function TypePricingEditor({
           onChange={(e) => setName(e.target.value)}
           required
         />
-        <TextField
-          select
-          label={t('pricing.inventory')}
-          value={inventoryMode}
-          onChange={(e) => {
-            const mode = e.target.value
-            if (
-              mode === 'shared' ||
-              mode === 'individual' ||
-              mode === 'unlimited'
-            ) {
-              setMode(mode)
-              if (mode === 'shared')
-                setPricing({ ...pricing, basis: 'per_bed' })
-            }
-          }}
-        >
-          {(['individual', 'unlimited', 'shared'] as const).map((mode) => (
-            <MenuItem key={mode} value={mode}>
-              {t(`pricing.${mode}`)}
-            </MenuItem>
-          ))}
-        </TextField>
-        {inventoryMode !== 'unlimited' && (
+        <Box sx={uiStyles.formGrid}>
           <TextField
-            type="number"
-            label={t('pricing.capacity')}
-            value={capacity}
-            onChange={(e) => setCapacity(Number(e.target.value))}
-          />
-        )}
+            select
+            label={t('pricing.inventory')}
+            value={inventoryMode}
+            onChange={(e) => {
+              const mode = e.target.value
+              if (
+                mode === 'shared' ||
+                mode === 'individual' ||
+                mode === 'unlimited'
+              ) {
+                setMode(mode)
+                if (mode === 'shared')
+                  setPricing({ ...pricing, basis: 'per_bed' })
+              }
+            }}
+          >
+            {(['individual', 'unlimited', 'shared'] as const).map((mode) => (
+              <MenuItem key={mode} value={mode}>
+                {t(`pricing.${mode}`)}
+              </MenuItem>
+            ))}
+          </TextField>
+          {inventoryMode !== 'unlimited' && (
+            <TextField
+              type="number"
+              label={t('pricing.capacity')}
+              value={capacity}
+              onChange={(e) => setCapacity(Number(e.target.value))}
+            />
+          )}
+        </Box>
         <FormControlLabel
           label={t('pricing.enabled')}
           control={
             <Checkbox checked={enabled} onChange={(_e, v) => setEnabled(v)} />
           }
         />
-        <TextField
-          select
-          label={t('pricing.basis')}
-          value={pricing.basis}
-          disabled={inventoryMode === 'shared'}
-          onChange={(e) => {
-            const basis = e.target.value
-            if (
-              basis === 'per_unit' ||
-              basis === 'per_person' ||
-              basis === 'per_bed'
-            )
-              setPricing({ ...pricing, basis })
-          }}
-        >
-          {(['per_unit', 'per_person'] as const).map((basis) => (
-            <MenuItem key={basis} value={basis}>
-              {t(`pricing.${basis}`)}
-            </MenuItem>
-          ))}
-          {inventoryMode === 'shared' && (
-            <MenuItem value="per_bed">{t('pricing.per_bed')}</MenuItem>
-          )}
-        </TextField>
-        {pricing.basis !== 'per_person' &&
-          money(t('pricing.base'), pricing.baseNightlyPriceMinor, (value) =>
-            setPricing({ ...pricing, baseNightlyPriceMinor: value }),
-          )}
+        <Box sx={uiStyles.formGrid}>
+          <TextField
+            select
+            label={t('pricing.basis')}
+            value={pricing.basis}
+            disabled={inventoryMode === 'shared'}
+            onChange={(e) => {
+              const basis = e.target.value
+              if (
+                basis === 'per_unit' ||
+                basis === 'per_person' ||
+                basis === 'per_bed'
+              )
+                setPricing({ ...pricing, basis })
+            }}
+          >
+            {(['per_unit', 'per_person'] as const).map((basis) => (
+              <MenuItem key={basis} value={basis}>
+                {t(`pricing.${basis}`)}
+              </MenuItem>
+            ))}
+            {inventoryMode === 'shared' && (
+              <MenuItem value="per_bed">{t('pricing.per_bed')}</MenuItem>
+            )}
+          </TextField>
+          {pricing.basis !== 'per_person' &&
+            money(t('pricing.base'), pricing.baseNightlyPriceMinor, (value) =>
+              setPricing({ ...pricing, baseNightlyPriceMinor: value }),
+            )}
+        </Box>
         {pricing.basis !== 'per_bed' &&
           categories.map((category) => (
             <Stack key={category} {...uiProps.stackSmall}>
@@ -264,7 +269,7 @@ function TypePricingEditor({
                   }),
                 )
               ) : (
-                <>
+                <Box sx={uiStyles.formGrid}>
                   <TextField
                     type="number"
                     label={t('pricing.included')}
@@ -291,7 +296,7 @@ function TypePricingEditor({
                         },
                       }),
                   )}
-                </>
+                </Box>
               )}
             </Stack>
           ))}
@@ -322,35 +327,37 @@ function TypePricingEditor({
                   timeZone: 'UTC',
                 }).format(new Date(Date.UTC(2026, 10, 1 + override.day)))}
               </Typography>
-              {pricing.basis !== 'per_person' &&
-                money(t('pricing.base'), rate.baseNightlyPriceMinor, (v) =>
-                  setRate({ baseNightlyPriceMinor: v }),
-                )}
-              {pricing.basis !== 'per_bed' &&
-                categories.map((c) => (
-                  <Stack key={c}>
-                    {money(
-                      `${t(`checkIn.${c}`)} · ${t(pricing.basis === 'per_person' ? 'pricing.rate' : 'pricing.extra')}`,
-                      pricing.basis === 'per_person'
-                        ? rate.rates[c]
-                        : rate.extraPersonRates[c],
-                      (v) =>
-                        setRate(
-                          pricing.basis === 'per_person'
-                            ? { rates: { ...rate.rates, [c]: v } }
-                            : {
-                                extraPersonRates: {
-                                  ...rate.extraPersonRates,
-                                  [c]: v,
+              <Box sx={uiStyles.formGrid}>
+                {pricing.basis !== 'per_person' &&
+                  money(t('pricing.base'), rate.baseNightlyPriceMinor, (v) =>
+                    setRate({ baseNightlyPriceMinor: v }),
+                  )}
+                {pricing.basis !== 'per_bed' &&
+                  categories.map((c) => (
+                    <Box key={c}>
+                      {money(
+                        `${t(`checkIn.${c}`)} · ${t(pricing.basis === 'per_person' ? 'pricing.rate' : 'pricing.extra')}`,
+                        pricing.basis === 'per_person'
+                          ? rate.rates[c]
+                          : rate.extraPersonRates[c],
+                        (v) =>
+                          setRate(
+                            pricing.basis === 'per_person'
+                              ? { rates: { ...rate.rates, [c]: v } }
+                              : {
+                                  extraPersonRates: {
+                                    ...rate.extraPersonRates,
+                                    [c]: v,
+                                  },
                                 },
-                              },
-                        ),
-                    )}
-                  </Stack>
-                ))}
-              {money(t('pricing.pets'), rate.petNightlyPriceMinor, (v) =>
-                setRate({ petNightlyPriceMinor: v }),
-              )}
+                          ),
+                      )}
+                    </Box>
+                  ))}
+                {money(t('pricing.pets'), rate.petNightlyPriceMinor, (v) =>
+                  setRate({ petNightlyPriceMinor: v }),
+                )}
+              </Box>
               <Button
                 onClick={() =>
                   setPricing({
