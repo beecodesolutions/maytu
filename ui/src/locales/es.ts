@@ -253,8 +253,8 @@ const es = {
     retrySave: 'Reintentar guardar reserva',
   },
   auth: {
-    title: 'Ingresar al camping',
-    subtitle: 'Administrá ingresos, extras y cierres.',
+    title: 'Ingresá a Maytu',
+    subtitle: 'Accedé al panel de tu alojamiento.',
     username: 'Usuario',
     password: 'Contraseña',
     login: 'Ingresar',

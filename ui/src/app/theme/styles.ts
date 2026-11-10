@@ -186,7 +186,7 @@ export const uiStyles = {
   loginScreenPaper: {
     p: 3,
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 380,
   } satisfies SxProps<Theme>,
   boldText: { fontWeight: 700 } satisfies SxProps<Theme>,
   formColumn: {
