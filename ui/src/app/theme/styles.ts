@@ -831,7 +831,6 @@ export const uiStyles = {
     mr: 'auto',
     overflowWrap: 'anywhere',
   } satisfies SxProps<Theme>,
-  settingsPanelStack: { mt: 3 } satisfies SxProps<Theme>,
   tabletAlignCenter: {
     alignItems: { sm: 'center' },
   } satisfies SxProps<Theme>,

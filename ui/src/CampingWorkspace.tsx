@@ -1435,7 +1435,7 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
     a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, i18n.language),
   )
   return (
-    <Stack {...uiProps.stackSection} sx={uiStyles.settingsPanelStack}>
+    <Stack {...uiProps.stackSection}>
       <Tabs
         value={tab}
         onChange={(_, value: typeof tab) => {
