@@ -25,7 +25,7 @@ jobs:
       AWS_DEFAULT_REGION: us-east-1
       AWS_PAGER: ''
       STACK_NAME: camping-production
-      DEPLOY_BUCKET: camping-deploy-048834125079-us-east-1
+      DEPLOY_BUCKET: maytu-deploy-048834125079-us-east-1
       CF_EXECUTION_ROLE_ARN: ${{ vars.CF_EXECUTION_ROLE_ARN }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
