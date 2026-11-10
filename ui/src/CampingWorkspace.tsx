@@ -1598,9 +1598,7 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
           {categories.map((category) => (
             <Stack key={category} {...uiProps.stackStandard}>
               <Typography
-                component="h3"
-                variant="subtitle1"
-                sx={uiStyles.boldText}
+                variant="h3"
               >
                 {category || t('settings.uncategorized')}
               </Typography>

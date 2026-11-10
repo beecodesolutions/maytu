@@ -118,9 +118,7 @@ function DayDetail({
         <Box>
           <Typography
             id="calendar-day-detail-title"
-            component="h3"
-            variant="subtitle1"
-            sx={uiStyles.boldText}
+            variant="h3"
           >
             {new Intl.DateTimeFormat(i18n.language, {
               dateStyle: 'full',

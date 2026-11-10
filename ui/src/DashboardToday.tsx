@@ -200,8 +200,7 @@ function TodaySectionHeading({
   return (
     <Box component="summary" sx={uiStyles.dashboardTodaySummary}>
       <Typography
-        component="h3"
-        variant="sectionLabel"
+        variant="h3"
         sx={uiStyles.dashboardTodayHeading(overdue)}
       >
         {title}

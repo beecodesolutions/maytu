@@ -7,7 +7,6 @@ export const operationalFont =
 
 export type MaytuTypographyVariant =
   | 'pageTitle'
-  | 'sectionLabel'
   | 'metric'
   | 'metricLarge'
   | 'metricSmall'
@@ -50,10 +49,12 @@ export const typography: TypographyVariantsOptions = {
     lineHeight: 1.2,
   },
   h3: {
-    fontFamily: editorialFont,
-    fontSize: '2rem',
-    fontWeight: 600,
-    lineHeight: 1.2,
+    fontFamily: operationalFont,
+    fontSize: '1rem',
+    fontWeight: 700,
+    lineHeight: 1.75,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
   },
   h4: {
     fontFamily: editorialFont,
@@ -117,14 +118,6 @@ export const typography: TypographyVariantsOptions = {
     lineHeight: 2.66,
     letterSpacing: '0.12em',
     textTransform: 'uppercase',
-  },
-  sectionLabel: {
-    fontFamily: operationalFont,
-    fontSize: '1rem',
-    fontWeight: 700,
-    lineHeight: 1.75,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
   },
   pageTitle: {
     fontFamily: editorialFont,
