@@ -83,6 +83,8 @@ import WorkspaceNavigation from './WorkspaceNavigation'
 import WorkspaceUserMenu from './WorkspaceUserMenu'
 import {
   navigateWorkspace,
+  settingsTabHref,
+  useSettingsTab,
   useWorkspaceSection,
   workspaceHref,
 } from './app/workspaceLocation'
@@ -1400,9 +1402,7 @@ function ExtraRow({
 
 function SettingsPanel({ profile }: { profile: CampingProfile }) {
   const { t, i18n } = useTranslation()
-  const [tab, setTab] = useState<'accommodations' | 'general' | 'extras'>(
-    'accommodations',
-  )
+  const tab = useSettingsTab()
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
   const [inlineCategory, setInlineCategory] = useState<string | null>(null)
   const templates = useExtraTemplatesQuery()
@@ -1438,10 +1438,6 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
     <Stack {...uiProps.stackSection}>
       <Tabs
         value={tab}
-        onChange={(_, value: typeof tab) => {
-          setTab(value)
-          scrollWorkspaceToTop()
-        }}
         variant="scrollable"
         scrollButtons={false}
         sx={uiStyles.campingWorkspaceTabs}
@@ -1449,18 +1445,24 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
       >
         <Tab
           value="accommodations"
+          href={settingsTabHref('accommodations')}
+          onClick={navigateWorkspace}
           label={t('settings.accommodationsTab')}
           id="settings-accommodations-tab"
           aria-controls="settings-accommodations-panel"
         />
         <Tab
           value="general"
+          href={settingsTabHref('general')}
+          onClick={navigateWorkspace}
           label={t('settings.generalTab')}
           id="settings-general-tab"
           aria-controls="settings-general-panel"
         />
         <Tab
           value="extras"
+          href={settingsTabHref('extras')}
+          onClick={navigateWorkspace}
           label={t('settings.templates')}
           id="settings-extras-tab"
           aria-controls="settings-extras-panel"
