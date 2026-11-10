@@ -1444,20 +1444,20 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
         aria-label={t('settings.title')}
       >
         <Tab
-          value="accommodations"
-          href={settingsTabHref('accommodations')}
-          onClick={navigateWorkspace}
-          label={t('settings.accommodationsTab')}
-          id="settings-accommodations-tab"
-          aria-controls="settings-accommodations-panel"
-        />
-        <Tab
           value="general"
           href={settingsTabHref('general')}
           onClick={navigateWorkspace}
           label={t('settings.generalTab')}
           id="settings-general-tab"
           aria-controls="settings-general-panel"
+        />
+        <Tab
+          value="accommodations"
+          href={settingsTabHref('accommodations')}
+          onClick={navigateWorkspace}
+          label={t('settings.accommodationsTab')}
+          id="settings-accommodations-tab"
+          aria-controls="settings-accommodations-panel"
         />
         <Tab
           value="extras"

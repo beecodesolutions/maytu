@@ -68,7 +68,6 @@ export default function PricingSettings({
   const type = types.data?.find((x) => x.id === selected)
   return (
     <Stack {...uiProps.stackSection}>
-      <Typography variant="h6">{t('pricing.settings')}</Typography>
       <FormControlLabel
         label={t('pricing.infantsCapacity')}
         control={
