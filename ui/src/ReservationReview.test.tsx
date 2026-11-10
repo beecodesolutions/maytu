@@ -67,7 +67,7 @@ it('also omits empty groups from person pricing and retains an advisory capacity
   )
   expect(markup).toContain('1 ×')
   expect(markup).not.toMatch(/>0 ×/)
-  expect(markup).toContain('Podés crear la reserva igualmente')
+  expect(markup).toContain('Puedes crear la reserva igualmente')
 })
 
 it('renders authoritative nightly breakdown, pets and block discounts', () => {

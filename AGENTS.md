@@ -1,3 +1,7 @@
+# Español de Maytu
+
+- Escribe todos los textos dirigidos al usuario en español neutro. Usa el tuteo (tú) y evita el voseo (vos) y los regionalismos. Aplica esta regla a la interfaz y a los mensajes de validación y error de la API.
+
 # MUI theme and visual styles
 
 - Define all visual styling in `ui/src/app/theme.ts` and `ui/src/app/theme/`. Both light and dark themes must use the same shared definitions; keep palette values mode-specific where needed.

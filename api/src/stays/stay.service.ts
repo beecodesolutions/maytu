@@ -272,7 +272,7 @@ export class StayService {
               )
               if (!existing)
                 throw conflict(
-                  'La estadía ya fue cerrada; registrá el pago por separado',
+                  'La estadía ya fue cerrada; registra el pago por separado',
                   'STAY_CLOSED',
                 )
               this.assertSamePayment(existing, stay.id, parsed.data.payment)
@@ -281,7 +281,7 @@ export class StayService {
           }
           if (stay.version !== parsed.data.version)
             throw conflict(
-              'La estadía cambió; actualizá el presupuesto',
+              'La estadía cambió; actualiza el presupuesto',
               'STALE_STAY',
             )
           if (reservation && reservation.status !== 'checked_in')
@@ -505,7 +505,7 @@ export class StayService {
     const stay = await this.lockStay(manager, campingId, id)
     if ((stay.reservationId ?? null) !== (reservation?.id ?? null))
       throw conflict(
-        'La reserva vinculada cambió; actualizá la pantalla',
+        'La reserva vinculada cambió; actualiza la pantalla',
         'STALE_STAY',
       )
     stay.reservation = reservation
@@ -787,7 +787,7 @@ export class StayService {
     const accepted = reservation?.checkOutDate ?? stay.estimatedDeparture
     if (!accepted || departureDate !== accepted)
       throw conflict(
-        'La salida de la reserva cambió; cotizá o actualizá la reserva antes de cerrar la estadía',
+        'La salida de la reserva cambió; cotiza o actualiza la reserva antes de cerrar la estadía',
         'RESERVATION_DATES_CHANGED',
       )
   }
