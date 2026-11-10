@@ -1,8 +1,11 @@
-# Camping
+# Maytu
 
-Piloto de Camping La Izuelina: reservas, ingreso, ocupación, extras, pagos
-parciales y cierre de estadías. React + MUI + RTK Query; API NestJS + TypeORM;
-PostgreSQL. Contratos Zod compartidos y MSW para desarrollo/pruebas.
+Maytu es una aplicación de gestión de alojamientos para campings y hostels.
+Permite cotizar reservas, consultar disponibilidad y ocupación, registrar
+ingresos y salidas, y gestionar extras, pagos y cierres de estadías.
+
+El frontend usa React, MUI y RTK Query. La API usa NestJS, TypeORM y PostgreSQL.
+El frontend y la API comparten contratos Zod. El modo demo usa MSW.
 
 ## Arranque local
 
@@ -54,16 +57,13 @@ Para probar el flujo de reservas con inventario individual y camping, usar [`doc
 pnpm db:seed:reservations
 ```
 
-## Reglas del piloto
+## Reglas de operación
 
-- Camping La Izuelina, Chile (`CL`), `CLP`, `America/Santiago`.
-- Bebés 0–5: $0; niños 6–17: $6.000; adultos 18+: $12.000 por persona/noche.
 - Tarifas, moneda y rangos se copian al ingreso. Cambios de tarifas afectan nuevos ingresos solamente.
 - Noches = diferencia de fechas calendario, mínimo una. Cierre registra salida real; fecha estimada no libera ocupación.
 - `hasVehicle` permite vehículo sin patente/descripción; no cobra automáticamente.
-- Extras son plantillas, con categoría como texto libre (sin tabla aparte). Seed usa categorías del menú: Comida, Bebestibles, Cervezas, Vinos, Otras cosas, Pizzas y Servicios. Agrupación visual queda para siguiente etapa. Al aplicarlas se copian descripción, categoría y precio; editar plantilla no modifica estadías existentes.
+- Extras son plantillas, con categoría como texto libre (sin tabla aparte). Al aplicarlas se copian descripción, categoría y precio; editar plantilla no modifica estadías existentes.
 - Extras libres no crean plantillas. Cantidad × precio unitario, cargo único; presentación forma parte de descripción (dos paquetes de seis empanadas son doce empanadas).
-- Seed incluye 22 plantillas del menú proporcionado por propietario, precios de primera columna CLP. Repetir seed no duplica ni sobrescribe ediciones de plantillas.
 - Cierre calcula alojamiento + extras y congela resultado; exige saldo exactamente cero. Puede registrar pago final de forma atómica. Repetir mismo cierre no duplica cargos ni pagos.
 - Reservas futuras se cotizan antes de crear o editar; la creación exige `acceptedTotalMinor` y rechaza `PRICE_CHANGED` si el precio se modificó. El snapshot congela moneda, tarifa o rangos, unidad base y ajustes.
 - Reservas pendientes consumen inventario; confirmar, cancelar y no-show requieren versión. No-show solo procede desde la fecha de entrada local. Los cambios que afectan el precio requieren aceptar un nuevo total.
@@ -74,15 +74,15 @@ pnpm db:seed:reservations
 - `source` identifica el canal de reserva y por defecto es `manual`; los eventos locales mantienen `origin: manual` y exponen el canal como `bookingSource`. Repetir un payload idempotente no crea otra versión, auditoría ni evento.
 - En estadías, los pagos parciales y anticipos son en efectivo, transferencia o tarjeta: importe, fecha y nota. Saldo = costo calculado menos pagos registrados. Anticipo excedente se muestra como saldo a favor; no compensa deuda de otros grupos. No hay procesador bancario, devoluciones, descuentos, impuestos adicionales ni reapertura.
 
-No se exponen huéspedes públicamente. Cada operación resuelve camping desde usuario autenticado. Todos los usuarios aprovisionados del camping tienen mismas capacidades en este piloto.
+No se exponen huéspedes públicamente. Cada operación resuelve camping desde usuario autenticado.
 
 ## Estructura y comandos
 
 - `ui/`: frontend, formularios, RTK Query y MSW.
 - `contracts/`: esquemas y tipos compartidos; datos confirmados de seed, sin fallback de configuración en UI real.
 - `api/`: Nest, entidades, migraciones, CLI, pruebas y handler Lambda. [Contrato HTTP](docs/api.md) y [operación](api/README.md).
-- OpenAPI del piloto: [documentación y exportación estática](docs/openapi.md). [Reservas, inventario y disponibilidad](docs/reservations.md) documentan las rutas publicadas por cada etapa; las etapas 3 y 4 publican cotización, reservas, ciclo de vida, ingreso vinculado, pagos y anulaciones. El cliente RTK Query se generará después.
-- `infra/template.yaml`: plantilla AWS SAM del piloto. [Despliegue y operación](docs/deployment.md).
+- OpenAPI: [documentación y exportación estática](docs/openapi.md). [Reservas, inventario y disponibilidad](docs/reservations.md) documentan las rutas publicadas por cada etapa; las etapas 3 y 4 publican cotización, reservas, ciclo de vida, ingreso vinculado, pagos y anulaciones. El cliente RTK Query se generará después.
+- `infra/template.yaml`: plantilla AWS SAM de la API. [Despliegue y operación](docs/deployment.md).
 
 ```sh
 pnpm typecheck
@@ -92,7 +92,7 @@ pnpm format:check
 pnpm package:lambda
 ```
 
-Pruebas backend usan PostgreSQL real en base separada `camping_test`, nunca base del piloto. Crear una vez con `docker compose exec database createdb -U camping camping_test`. Por defecto usan `camping_test` en el mismo servidor local; para otra conexión, pasar `DATABASE_URL` con esa base. Pruebas deben fallar si apuntan a base no identificada como test.
+Pruebas backend usan PostgreSQL real en base separada `camping_test`, nunca la base de desarrollo. Crear una vez con `docker compose exec database createdb -U camping camping_test`. Por defecto usan `camping_test` en el mismo servidor local; para otra conexión, pasar `DATABASE_URL` con esa base. Pruebas deben fallar si apuntan a base no identificada como test.
 
 ## Pruebas automáticas en GitHub
 
@@ -101,7 +101,7 @@ según `package.json`, comprueba tipos y lint, y
 ejecuta los tests de contratos, API, UI y los controles offline del despliegue.
 Los tests de API usan PostgreSQL temporal con base `camping_test`; los archivos
 se ejecutan en serie porque la prueba de migraciones reconstruye el esquema.
-No necesita secretos ni acceso a AWS, Supabase o datos del piloto. Su resultado
+No necesita secretos ni acceso a AWS, Supabase o datos de producción. Su resultado
 aparece como **Types, lint and tests** en los checks del PR. El despliegue sigue
 siendo un workflow separado que se ejecuta al actualizar `main`.
 
@@ -133,7 +133,7 @@ Supabase Free puede pausar proyectos de baja actividad y no incluye backups auto
 
 AWS Free Tier y créditos no garantizan factura cero permanente. Revisar [AWS Free Tier](https://aws.amazon.com/free/free-tier-faqs/), [HTTP API](https://aws.amazon.com/api-gateway/pricing/) y [Supabase](https://supabase.com/pricing/) al abrir cuenta. Alertas de presupuesto avisan, no constituyen límite duro de gasto.
 
-El piloto usa Vercel, Lambda y Supabase; consultar [despliegue y operación](docs/deployment.md) para recursos, verificaciones y rollback. Los costos y créditos requieren seguimiento; validación local no equivale a operación cloud verificada.
+Maytu usa Vercel, Lambda y Supabase; consultar [despliegue y operación](docs/deployment.md) para recursos, verificaciones y rollback. Los costos y créditos requieren seguimiento; validación local no equivale a operación cloud verificada.
 
 ### Actualizar base local para pagos
 
