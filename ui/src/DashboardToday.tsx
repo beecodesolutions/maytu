@@ -475,7 +475,7 @@ export default function DashboardToday({
         >
           {formatDate(today, i18n.language)} · {profile.timezone}
         </Typography>
-        <Stack {...uiProps.stackStandard} divider={<Divider />}>
+        <Stack {...uiProps.stackSmall} divider={<Divider />}>
           <Box component="details" open>
             <TodaySectionHeading
               title={t('home.expectedArrivals')}
