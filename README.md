@@ -1,5 +1,7 @@
 # Maytu
 
+<img src="ui/public/maytu-mark.svg" alt="Logo de Maytu" width="64">
+
 Maytu es una aplicación de gestión de alojamientos para campings y hostels.
 Permite cotizar reservas, consultar disponibilidad y ocupación, registrar
 ingresos y salidas, y gestionar extras, pagos y cierres de estadías.
