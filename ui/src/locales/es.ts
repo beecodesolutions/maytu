@@ -266,6 +266,8 @@ const es = {
   },
   settings: {
     title: 'Configuración',
+    accommodationsTab: 'Alojamientos',
+    generalTab: 'General',
     money: 'Importes',
     useCents: 'Usar centavos',
     moneyHelp:
