@@ -1387,6 +1387,8 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
   const { t, i18n } = useTranslation()
   const tab = useSettingsTab()
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const [createExtraOpen, setCreateExtraOpen] = useState(false)
+  const createExtraButton = useRef<HTMLButtonElement>(null)
   const [inlineCategory, setInlineCategory] = useState<string | null>(null)
   const templates = useExtraTemplatesQuery()
   const [update] = useUpdateExtraTemplateMutation()
@@ -1608,80 +1610,94 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
         aria-labelledby="settings-extras-tab"
         hidden={tab !== 'extras'}
       >
-        <Stack {...uiProps.stackSection}>
-          <SectionCard title={t('settings.createTemplate')}>
-            <CreateExtraForm profile={profile} categories={categories} />
-          </SectionCard>
-          <SectionCard title={t('settings.templates')}>
-            <Stack {...uiProps.stackStandard}>
-              {templates.isError && (
-                <Alert severity="error">{t('settings.loadError')}</Alert>
-              )}
-              <Box>
-                {categories.map((category, index) => {
-                  const items = extrasByCategory.get(category) ?? []
-                  return (
-                    <Accordion
-                      key={category}
-                      disableGutters
-                      expanded={expandedCategory === category}
-                      onChange={(_, expanded) =>
-                        setExpandedCategory(expanded ? category : null)
-                      }
-                    >
-                      <AccordionSummary
-                        expandIcon={<LucideIcon icon={ChevronDown} />}
-                        id={`settings-extra-category-${index}`}
-                        aria-controls={`settings-extra-items-${index}`}
-                      >
-                        <Typography component="span" variant="h3">
-                          {category || t('settings.uncategorized')} (
-                          {items.length})
-                        </Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Stack {...uiProps.stackSmall}>
-                          {items.map((template) => (
-                            <TemplateRow
-                              key={template.id}
-                              template={template}
-                              currency={profile.currency}
-                              moneyDecimals={profile.moneyDecimals}
-                              onSave={update}
-                            />
-                          ))}
-                          {inlineCategory === category ? (
-                            <CreateExtraForm
-                              profile={profile}
-                              categories={categories}
-                              fixedCategory={category}
-                              onClose={() =>
-                                setInlineCategory((current) =>
-                                  current === category ? null : current,
-                                )
-                              }
-                            />
-                          ) : (
-                            <Box>
-                              <Button
-                                variant="text"
-                                color="primary"
-                                size="small"
-                                sx={uiStyles.inlineActionLink}
-                                onClick={() => setInlineCategory(category)}
-                              >
-                                + {t('settings.createTemplate')}
-                              </Button>
-                            </Box>
-                          )}
-                        </Stack>
-                      </AccordionDetails>
-                    </Accordion>
-                  )
-                })}
-              </Box>
+        <Stack {...uiProps.stackStandard}>
+          {createExtraOpen ? (
+            <CreateExtraForm
+              profile={profile}
+              categories={categories}
+              onClose={() => {
+                setCreateExtraOpen(false)
+                requestAnimationFrame(() => createExtraButton.current?.focus())
+              }}
+            />
+          ) : (
+            <Stack {...uiProps.row} sx={uiStyles.trailingActions}>
+              <Button
+                ref={createExtraButton}
+                size="small"
+                variant="outlined"
+                startIcon={<LucideIcon icon={Plus} />}
+                onClick={() => setCreateExtraOpen(true)}
+              >
+                {t('settings.createTemplate')}
+              </Button>
             </Stack>
-          </SectionCard>
+          )}
+          {templates.isError && (
+            <Alert severity="error">{t('settings.loadError')}</Alert>
+          )}
+          <Box>
+            {categories.map((category, index) => {
+              const items = extrasByCategory.get(category) ?? []
+              return (
+                <Accordion
+                  key={category}
+                  disableGutters
+                  expanded={expandedCategory === category}
+                  onChange={(_, expanded) =>
+                    setExpandedCategory(expanded ? category : null)
+                  }
+                >
+                  <AccordionSummary
+                    expandIcon={<LucideIcon icon={ChevronDown} />}
+                    id={`settings-extra-category-${index}`}
+                    aria-controls={`settings-extra-items-${index}`}
+                  >
+                    <Typography component="span" variant="h3">
+                      {category || t('settings.uncategorized')} ({items.length})
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Stack {...uiProps.stackSmall}>
+                      {items.map((template) => (
+                        <TemplateRow
+                          key={template.id}
+                          template={template}
+                          currency={profile.currency}
+                          moneyDecimals={profile.moneyDecimals}
+                          onSave={update}
+                        />
+                      ))}
+                      {inlineCategory === category ? (
+                        <CreateExtraForm
+                          profile={profile}
+                          categories={categories}
+                          fixedCategory={category}
+                          onClose={() =>
+                            setInlineCategory((current) =>
+                              current === category ? null : current,
+                            )
+                          }
+                        />
+                      ) : (
+                        <Box>
+                          <Button
+                            variant="text"
+                            color="primary"
+                            size="small"
+                            sx={uiStyles.inlineActionLink}
+                            onClick={() => setInlineCategory(category)}
+                          >
+                            + {t('settings.createTemplate')}
+                          </Button>
+                        </Box>
+                      )}
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+              )
+            })}
+          </Box>
         </Stack>
       </Box>
     </TabbedSection>
@@ -1744,7 +1760,7 @@ function CreateExtraForm({
         />
       )}
       <TextField
-        autoFocus={fixedCategory !== undefined}
+        autoFocus
         label={t('stay.description')}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
@@ -1757,24 +1773,26 @@ function CreateExtraForm({
         showCurrencyInInput
         onChangeMinor={(value) => setUnitPriceMinor(value === '' ? NaN : value)}
       />
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => void saveTemplate()}
-        disabled={
-          createState.isLoading ||
-          !description.trim() ||
-          !Number.isSafeInteger(unitPriceMinor) ||
-          unitPriceMinor < 0
-        }
-      >
-        {t('settings.createTemplate')}
-      </Button>
-      {onClose && (
-        <Button onClick={onClose} disabled={createState.isLoading}>
-          {t('common.cancel')}
+      <Stack {...uiProps.rowSmall} sx={uiStyles.trailingActions}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => void saveTemplate()}
+          disabled={
+            createState.isLoading ||
+            !description.trim() ||
+            !Number.isSafeInteger(unitPriceMinor) ||
+            unitPriceMinor < 0
+          }
+        >
+          {t('common.save')}
         </Button>
-      )}
+        {onClose && (
+          <Button onClick={onClose} disabled={createState.isLoading}>
+            {t('common.cancel')}
+          </Button>
+        )}
+      </Stack>
       {error && <Alert severity="error">{t('settings.saveError')}</Alert>}
     </Box>
   )
