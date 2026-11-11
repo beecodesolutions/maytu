@@ -2,6 +2,7 @@ import TabbedSection from './components/TabbedSection'
 import SectionTabs from './components/SectionTabs'
 import SectionCard from './components/SectionCard'
 import PricingSettings from './PricingSettings'
+import CampingProfileSettings from './CampingProfileSettings'
 import { uiProps, uiStyles } from './app/theme'
 import AccommodationFilter from './AccommodationFilter'
 import { useAppDispatch, useAppSelector } from './app/hooks'
@@ -1466,6 +1467,7 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
         hidden={tab !== 'general'}
       >
         <Stack {...uiProps.stackSection}>
+          <CampingProfileSettings profile={profile} />
           <SectionCard
             title={t('settings.money')}
             subtitle={t('settings.moneyHelp')}

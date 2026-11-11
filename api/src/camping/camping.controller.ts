@@ -26,6 +26,20 @@ export class CampingController {
     return this.campingService.profile(request.auth!)
   }
 
+  @Patch()
+  @ApiEndpoint({
+    operationId: 'campingUpdateProfile',
+    summary: 'Actualizar el nombre y la zona horaria del camping',
+    status: 200,
+    body: openApiRef('CampingProfileUpdate'),
+    response: openApiRef('CampingProfile'),
+    errors: [400, 401, 403, 404, 409, 413, 500],
+  })
+  updateProfile(@Req() request: AuthenticatedRequest) {
+    assertAllowedOrigin(request)
+    return this.campingService.updateProfile(request.auth!, request.body)
+  }
+
   @Patch('occupancy-settings')
   @ApiEndpoint({
     operationId: 'campingUpdateOccupancySettings',

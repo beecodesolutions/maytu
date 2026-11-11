@@ -97,6 +97,29 @@ export const campingProfileSchema = z.object({
   pendingAmountMinor: moneySchema,
 })
 export type CampingProfile = z.infer<typeof campingProfileSchema>
+
+const campingProfileFieldsSchema = z.strictObject({
+  name: z.string().trim().min(1, 'Introduce el nombre del camping.').max(160),
+  timezone: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .refine((timezone) => {
+      if (/^[+-]/.test(timezone)) return false
+      try {
+        new Intl.DateTimeFormat('en', { timeZone: timezone })
+        return true
+      } catch {
+        return false
+      }
+    }, 'Introduce una zona horaria válida.'),
+})
+
+export const campingProfileUpdateSchema = campingProfileFieldsSchema.extend({
+  expected: campingProfileSchema.pick({ name: true, timezone: true }).strict(),
+})
+export type CampingProfileUpdate = z.input<typeof campingProfileUpdateSchema>
 export const sessionUserSchema = z.object({
   id: z.string(),
   username: z.string(),

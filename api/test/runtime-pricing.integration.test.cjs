@@ -150,6 +150,48 @@ test('runtime provisioning grants only the required bed and configuration privil
 })
 test('restricted runtime supports pricing settings, allocation, edits and cancellation trigger', async () => {
   const campingService = new CampingService(runtime, new StayService(runtime))
+  const expected = {
+    name: context.camping.name,
+    timezone: context.camping.timezone,
+  }
+  const next = { name: 'Maytu runtime', timezone: 'America/Managua' }
+  const updated = await campingService.updateProfile(context, {
+    ...next,
+    expected,
+  })
+  assert.equal(updated.name, next.name)
+  assert.equal(updated.timezone, next.timezone)
+  assert.equal(updated.currency, context.camping.currency)
+  await assert.rejects(
+    campingService.updateProfile(context, {
+      ...next,
+      name: 'Conflicting edit',
+      expected,
+    }),
+    {
+      response: {
+        code: 'STALE_CAMPING_PROFILE',
+        message: 'La configuración cambió. Revisa los datos actuales.',
+      },
+    },
+  )
+  await assert.rejects(
+    campingService.updateProfile(context, {
+      ...next,
+      timezone: 'Mars/Olympus',
+      expected: next,
+    }),
+    { status: 400 },
+  )
+  await assert.rejects(
+    campingService.updateProfile(context, {
+      ...next,
+      currency: 'USD',
+      expected: next,
+    }),
+    { status: 400 },
+  )
+  await campingService.updateProfile(context, { ...expected, expected: next })
   await campingService.updateOccupancySettings(context, {
     infantsConsumeCapacity: false,
   })

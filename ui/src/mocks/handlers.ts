@@ -1,5 +1,6 @@
 import { delay, http, HttpResponse } from 'msw'
 import {
+  campingProfileUpdateSchema,
   pilotCamping,
   pilotExtras,
   paymentInputSchema,
@@ -369,6 +370,26 @@ export const handlers = [
     stay.extras = stay.extras.filter((extra) => extra.id !== params.extraId)
     stay.version += 1
     return HttpResponse.json(stay)
+  }),
+  http.patch('*/api/camping', async ({ request }) => {
+    if (!loggedIn) return jsonError(401)
+    const parsed = campingProfileUpdateSchema.safeParse(await request.json())
+    if (!parsed.success) return jsonError(400)
+    const { expected, name, timezone } = parsed.data
+    if (name === profile.name && timezone === profile.timezone)
+      return HttpResponse.json(profile)
+    if (
+      expected.name !== profile.name ||
+      expected.timezone !== profile.timezone
+    )
+      return HttpResponse.json(
+        { code: 'STALE_CAMPING_PROFILE' },
+        { status: 409 },
+      )
+    if (timezone !== profile.timezone && stays.some((stay) => !stay.closure))
+      return HttpResponse.json({ code: 'ACTIVE_STAYS' }, { status: 409 })
+    Object.assign(profile, { name, timezone })
+    return HttpResponse.json(profile)
   }),
   http.patch('*/api/camping/money-settings', async ({ request }) => {
     if (!loggedIn) return jsonError(401)

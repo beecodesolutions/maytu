@@ -4,13 +4,14 @@ import { DataSource } from 'typeorm'
 import {
   ageRangesSchema,
   campingProfileSchema,
+  campingProfileUpdateSchema,
   ratesSchema,
   moneySettingsSchema,
   hasMoneyPrecision,
   type CampingProfile,
 } from '@camping/contracts'
 import { ensureSafeMoney } from '../common/date'
-import { zodBadRequest, notFound } from '../common/errors'
+import { conflict, zodBadRequest, notFound } from '../common/errors'
 import { withInventoryTransaction } from '../accommodations/inventory-transaction'
 import { AuditLogEntity } from '../database/entities/audit-log.entity'
 import { CampingEntity } from '../database/entities/camping.entity'
@@ -75,6 +76,64 @@ export class CampingService {
       activeVehicles: Number(row?.vehicles ?? 0),
       pendingAmountMinor,
     })
+  }
+
+  async updateProfile(
+    context: AuthContext,
+    raw: unknown,
+  ): Promise<CampingProfile> {
+    const parsed = campingProfileUpdateSchema.safeParse(raw)
+    if (!parsed.success) throw zodBadRequest(parsed.error)
+    const { expected, ...next } = parsed.data
+    await withInventoryTransaction(
+      this.dataSource,
+      context,
+      async (manager) => {
+        const camping = await manager.findOneByOrFail(CampingEntity, {
+          id: context.camping.id,
+        })
+        const before = { name: camping.name, timezone: camping.timezone }
+        if (before.name === next.name && before.timezone === next.timezone)
+          return
+        if (
+          before.name !== expected.name ||
+          before.timezone !== expected.timezone
+        )
+          throw conflict(
+            'La configuración cambió. Revisa los datos actuales.',
+            'STALE_CAMPING_PROFILE',
+          )
+        if (before.timezone !== next.timezone) {
+          const hasActiveStay = await manager
+            .createQueryBuilder(StayEntity, 'stay')
+            .where('stay.camping_id = :campingId', { campingId: camping.id })
+            .andWhere('stay.closed_at IS NULL')
+            .getExists()
+          if (hasActiveStay)
+            throw conflict(
+              'Cierra las estadías activas antes de cambiar la zona horaria.',
+              'ACTIVE_STAYS',
+            )
+        }
+        await manager.update(CampingEntity, camping.id, {
+          ...next,
+          updatedAt: new Date(),
+        })
+        await manager.save(
+          AuditLogEntity,
+          manager.create(AuditLogEntity, {
+            campingId: camping.id,
+            actorId: context.user.id,
+            action: 'camping.profile_updated',
+            entityType: 'Camping',
+            entityId: camping.id,
+            beforeState: before,
+            afterState: next,
+          }),
+        )
+      },
+    )
+    return this.profile(context)
   }
 
   async updateOccupancySettings(
