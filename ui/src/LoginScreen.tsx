@@ -39,6 +39,7 @@ export default function LoginScreen() {
           {state.isError && <Alert severity="error">{t('auth.invalid')}</Alert>}
           <TextField
             label={t('auth.username')}
+            slotProps={{ inputLabel: { shrink: true } }}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
@@ -47,6 +48,7 @@ export default function LoginScreen() {
           />
           <TextField
             label={t('auth.password')}
+            slotProps={{ inputLabel: { shrink: true } }}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             type="password"

@@ -33,6 +33,8 @@ import type {
   AvailabilityQuery,
   AvailabilityResponse,
   CampingProfile,
+  CampingProfileUpdate,
+  OccupancySettings,
   CheckInRequest,
   ExtraTemplate,
   PaymentInput,
@@ -423,6 +425,25 @@ export const apiSlice = createApi({
         { type: 'Stays', id: 'LIST' },
       ],
     }),
+    updateCampingProfile: builder.mutation<
+      CampingProfile,
+      CampingProfileUpdate
+    >({
+      query: (body) => ({ url: '/camping', method: 'PATCH', body }),
+      transformResponse: (response) => parse(campingProfileSchema, response),
+      invalidatesTags: (result, error) => {
+        if (result)
+          return [
+            'Camping',
+            'Availability',
+            'Stays',
+            'Stay',
+            'Reservations',
+            'Reservation',
+          ]
+        return error?.status === 409 ? ['Camping'] : []
+      },
+    }),
     updateMoneySettings: builder.mutation<
       CampingProfile,
       { moneyDecimals: 0 | null }
@@ -504,7 +525,7 @@ export const apiSlice = createApi({
     }),
     updateOccupancySettings: builder.mutation<
       CampingProfile,
-      { infantsConsumeCapacity: boolean }
+      OccupancySettings
     >({
       query: (body) => ({
         url: '/camping/occupancy-settings',
@@ -563,5 +584,6 @@ export const {
   useSaveAccommodationBedMutation,
   useUpdateOccupancySettingsMutation,
   useUpdateRatesMutation,
+  useUpdateCampingProfileMutation,
   useUpdateMoneySettingsMutation,
 } = apiSlice

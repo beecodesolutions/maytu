@@ -1,3 +1,5 @@
+import SectionCard from './components/SectionCard'
+import { navigateWorkspace, workspaceHref } from './app/workspaceLocation'
 import { uiProps, uiStyles, checkoutActionStyles } from './app/theme'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -5,15 +7,15 @@ import {
   Alert,
   Box,
   Button,
+  Divider,
   IconButton,
   List,
   ListItem,
-  Paper,
   Stack,
   Tooltip,
   Typography,
 } from '@mui/material'
-import { LogIn, LogOut } from 'lucide-react'
+import { ChevronDown, LogIn, LogOut } from 'lucide-react'
 import type {
   AccommodationType,
   CampingProfile,
@@ -185,6 +187,32 @@ function useTodayData(
   ])
 
   return { ...state, retry }
+}
+
+function TodaySectionHeading({
+  title,
+  count,
+  overdue = false,
+}: {
+  title: string
+  count: number
+  overdue?: boolean
+}) {
+  return (
+    <Box component="summary" sx={uiStyles.dashboardTodaySummary}>
+      <Typography variant="h3" sx={uiStyles.dashboardTodayHeading(overdue)}>
+        {title}
+        <Typography
+          component="span"
+          variant="subtitle2"
+          sx={uiStyles.dashboardTodayCount}
+        >
+          {count}
+        </Typography>
+        <ChevronDown aria-hidden="true" />
+      </Typography>
+    </Box>
+  )
 }
 
 function ReservationRow({
@@ -429,31 +457,17 @@ export default function DashboardToday({
   if (!dashboard) return null
 
   return (
-    <Stack {...uiProps.stackStandard}>
-      <Paper
-        component="section"
-        variant="outlined"
-        sx={uiStyles.dashboardTodayPaper}
+    <Stack {...uiProps.stackSection}>
+      <SectionCard
+        title={t('home.todayTitle')}
+        subtitle={`${formatDate(today, i18n.language)} · ${profile.timezone}`}
       >
-        <Typography component="h2" variant="h6" sx={uiStyles.boldText}>
-          {t('home.todayTitle')}
-        </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={uiStyles.bottomGap}
-        >
-          {formatDate(today, i18n.language)} · {profile.timezone}
-        </Typography>
-        <Stack {...uiProps.stackSection}>
-          <Box>
-            <Typography
-              component="h3"
-              variant="subtitle1"
-              sx={uiStyles.dashboardTodayTypography3}
-            >
-              {t('home.expectedArrivals')}
-            </Typography>
+        <Stack {...uiProps.stackSmall} divider={<Divider />}>
+          <Box component="details" open>
+            <TodaySectionHeading
+              title={t('home.expectedArrivals')}
+              count={dashboard.arrivals.length}
+            />
             {dashboard.arrivals.length ? (
               <List disablePadding>
                 {dashboard.arrivals.map((reservation) => (
@@ -479,14 +493,11 @@ export default function DashboardToday({
               </Typography>
             )}
           </Box>
-          <Box>
-            <Typography
-              component="h3"
-              variant="subtitle1"
-              sx={uiStyles.dashboardTodayTypography4}
-            >
-              {t('home.expectedDepartures')}
-            </Typography>
+          <Box component="details" open>
+            <TodaySectionHeading
+              title={t('home.expectedDepartures')}
+              count={departures.today.length}
+            />
             {departures.today.length ? (
               <List disablePadding>
                 {departures.today.map((stay) => (
@@ -509,14 +520,12 @@ export default function DashboardToday({
             )}
           </Box>
           {departures.overdue.length > 0 && (
-            <Box>
-              <Typography
-                component="h3"
-                variant="subtitle1"
-                sx={uiStyles.dashboardTodayTypography5}
-              >
-                {t('home.overdueDepartures')}
-              </Typography>
+            <Box component="details" open>
+              <TodaySectionHeading
+                title={t('home.overdueDepartures')}
+                count={departures.overdue.length}
+                overdue
+              />
               <List disablePadding>
                 {departures.overdue.map((stay) => (
                   <DepartureRow
@@ -534,7 +543,7 @@ export default function DashboardToday({
             </Box>
           )}
         </Stack>
-      </Paper>
+      </SectionCard>
       {checkInReservation && (
         <ReservationCheckInDialog
           reservation={checkInReservation}
@@ -550,8 +559,6 @@ export default function DashboardToday({
         titleId="active-stays-title"
         title={t('home.activeStays')}
         subtitle={t('home.activeStaysCount', { count: activeStays.length })}
-        titleVariant="h6"
-        {...uiProps.compactWidget}
         action={
           <AccommodationFilter
             value={activeFilter}
@@ -568,6 +575,11 @@ export default function DashboardToday({
           unitNames={unitNames}
           reservationsById={reservationsById}
         />
+        <Box>
+          <Button href={workspaceHref('stays')} onClick={navigateWorkspace}>
+            {t('navigation.allStays')}
+          </Button>
+        </Box>
       </DashboardWidget>
     </Stack>
   )

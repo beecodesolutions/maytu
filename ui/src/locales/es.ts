@@ -48,7 +48,6 @@ const es = {
     discount: 'Descuento por bloques',
     adjustment: 'Ajuste acordado',
     settings: 'Alojamientos y precios',
-    infantsCapacity: 'Los bebés ocupan plaza y cama',
     name: 'Nombre',
     basis: 'Cobro',
     per_unit: 'Por unidad',
@@ -63,6 +62,7 @@ const es = {
     included: 'Cupos incluidos',
     extra: 'Cargo adicional',
     rate: 'Tarifa por noche',
+    nightlyCategoryRate: '{{category}} por noche',
     weekdays: 'Precios por día de semana',
     addDay: 'Agregar día',
     day: 'Día',
@@ -76,7 +76,11 @@ const es = {
     FIXED_PRICE: 'Precio del bloque',
     FREE_NIGHTS: 'Noches gratis',
     value: 'Valor',
+    noTypes: 'Todavía no hay tipos de alojamiento.',
     addType: 'Agregar tipo',
+    enableType: 'Habilitar {{name}}',
+    backToTypes: 'Volver a alojamientos',
+    inactive: 'Inactivo',
     addUnit: 'Agregar unidad',
     units: 'Unidades y camas',
     bed: 'Nombre de cama',
@@ -110,9 +114,9 @@ const es = {
     account: 'Cuenta',
     appearance: 'Apariencia',
     campingSettings: 'Tu camping',
-    settingsHelp: 'Administrá las tarifas y los extras del camping.',
+    settingsHelp: 'Administra las tarifas y los extras del camping.',
     reservationsHelp:
-      'Consultá la disponibilidad y las reservas por fecha y alojamiento.',
+      'Consulta la disponibilidad y las reservas por fecha y alojamiento.',
     settings: 'Configuración',
     menu: 'Abrir navegación',
     stayViews: 'Estado de las estadías',
@@ -178,8 +182,8 @@ const es = {
   },
   dateRange: {
     label: 'Seleccionar rango de fechas',
-    help: 'Elegí el día de entrada y después el de salida.',
-    selectDate: 'Elegí una fecha',
+    help: 'Elige el día de entrada y después el de salida.',
+    selectDate: 'Elige una fecha',
     start: 'Entrada',
     end: 'Salida',
   },
@@ -197,31 +201,31 @@ const es = {
     acceptAmount: 'Acepto el importe final de {{amount}}',
     noOffers: 'No hay opciones disponibles para esta búsqueda.',
     searchError:
-      'No se pudo completar la búsqueda. Revisá las fechas y huéspedes e intentá nuevamente.',
+      'No se pudo completar la búsqueda. Revisa las fechas y huéspedes e intenta nuevamente.',
 
     title: 'Nueva reserva',
     success: 'Reserva de {{name}} creada como pendiente.',
     accommodationSection: 'Alojamiento y fechas',
     type: 'Tipo de alojamiento',
-    selectType: 'Elegí un tipo de alojamiento.',
-    selectUnit: 'Elegí una unidad.',
+    selectType: 'Elige un tipo de alojamiento.',
+    selectUnit: 'Elige una unidad.',
     unit: 'Unidad',
     capacity_one: 'máximo {{count}} persona',
     capacity_other: 'máximo {{count}} personas',
     checkIn: 'Entrada',
     checkOut: 'Salida',
     nightsField: 'Noches',
-    invalidNights: 'Ingresá un número entero de noches mayor que cero.',
+    invalidNights: 'Ingresa un número entero de noches mayor que cero.',
     email: 'Email',
     notes: 'Notas',
-    invalidEmail: 'Ingresá un email válido.',
+    invalidEmail: 'Ingresa un email válido.',
     invalidDeparture: 'La salida debe ser posterior a la entrada.',
-    guestsRequired: 'Ingresá al menos un huésped.',
+    guestsRequired: 'Ingresa al menos un huésped.',
     inventoryError: 'No pudimos cargar los alojamientos.',
     noInventory:
-      'No hay alojamientos habilitados para crear reservas. Revisá la configuración de tipos y unidades.',
+      'No hay alojamientos habilitados para crear reservas. Revisa la configuración de tipos y unidades.',
     quote: 'Consultar disponibilidad y precio',
-    summary: 'Revisá tu reserva',
+    summary: 'Revisa tu reserva',
     back: 'Volver',
     accommodationLabel: 'Alojamiento',
     totalLabel: 'Total de la reserva',
@@ -240,22 +244,22 @@ const es = {
     notHeld:
       'La cotización no retiene disponibilidad. Se verificará nuevamente al guardar.',
     overCapacity:
-      'La unidad admite un máximo de {{max}} personas y la reserva incluye {{people}}, según la configuración de ocupación. Podés crear la reserva igualmente.',
+      'La unidad admite un máximo de {{max}} personas y la reserva incluye {{people}}, según la configuración de ocupación. Puedes crear la reserva igualmente.',
     priceChanged:
-      'El precio cambió. Consultá nuevamente y revisá el nuevo total antes de guardar.',
+      'El precio cambió. Consulta nuevamente y revisa el nuevo total antes de guardar.',
     unavailable:
-      'No se puede reservar ese alojamiento con los datos elegidos. Revisá la unidad, las fechas y la disponibilidad.',
+      'No se puede reservar ese alojamiento con los datos elegidos. Revisa la unidad, las fechas y la disponibilidad.',
     invalidRequest:
-      'No pudimos guardar esos datos. Revisá el formulario y volvé a cotizar.',
+      'No pudimos guardar esos datos. Revisa el formulario y vuelve a cotizar.',
     quoteError:
-      'No pudimos consultar disponibilidad y precio. Volvé a intentarlo.',
+      'No pudimos consultar disponibilidad y precio. Vuelve a intentarlo.',
     uncertain:
-      'No pudimos confirmar si la reserva se guardó. Reintentá con los mismos datos para evitar duplicados.',
+      'No pudimos confirmar si la reserva se guardó. Reintenta con los mismos datos para evitar duplicados.',
     retrySave: 'Reintentar guardar reserva',
   },
   auth: {
-    title: 'Ingresar al camping',
-    subtitle: 'Administrá ingresos, extras y cierres.',
+    title: 'Ingresa a Maytu',
+    subtitle: 'Accede al panel de tu alojamiento.',
     username: 'Usuario',
     password: 'Contraseña',
     login: 'Ingresar',
@@ -267,6 +271,41 @@ const es = {
   },
   settings: {
     title: 'Configuración',
+    accommodationsTab: 'Alojamientos',
+    generalTab: 'General',
+    campingProfile: 'Datos del camping',
+    campingName: 'Nombre del camping',
+    country: 'País',
+    timezone: 'Zona horaria',
+    currency: 'Moneda',
+    suggestedTimezone: 'Zona sugerida: {{timezone}}',
+    suggestedTimezones: 'Las zonas del país aparecen primero.',
+    suggestedCurrency: 'Según el país: {{currency}}',
+    regionalSettingsImpact: 'Estos cambios se aplicarán a nuevas estadías.',
+    activeStayTimezone:
+      'Cierra las estadías activas antes de cambiar la zona horaria.',
+    activeStayCurrency:
+      'Cierra las estadías activas antes de cambiar la moneda.',
+    openReservationsCurrency:
+      'Finaliza las reservas abiertas antes de cambiar la moneda.',
+    currencyPrecision:
+      'Selecciona una moneda con la misma cantidad de decimales para conservar las tarifas configuradas.',
+    staleProfile:
+      'La configuración cambió mientras editabas. Revisa los datos actuales ({{name}} · {{timezone}}) antes de guardar de nuevo.',
+    profilePermission: 'Tu sesión no tiene acceso para guardar estos cambios.',
+    guestAges: 'Edades y ocupación',
+    guestAgesHelp:
+      'Los cambios se aplican a nuevos ingresos y reservas. Las edades y los importes guardados se conservan.',
+    staleAges:
+      'Los rangos cambiaron mientras editabas. Revisa los máximos actuales (bebés: {{infants}}, niños: {{children}}) antes de volver a guardar.',
+    infantsCapacity: 'Los bebés ocupan plaza y cama',
+    maxAge: {
+      infants: 'Edad máxima de bebés (años)',
+      children: 'Edad máxima de niños (años)',
+    },
+    adultAge: 'La tarifa de adulto se aplica desde los {{age}} años.',
+    invalidAges:
+      'Usa edades enteras y no negativas. La edad máxima de niños debe ser mayor que la de bebés.',
     money: 'Importes',
     useCents: 'Usar centavos',
     moneyHelp:
@@ -286,11 +325,11 @@ const es = {
     inactive: 'Desactivado',
     deactivateExtra: 'Desactivar extra',
     deactivateHelp:
-      '“{{name}}” dejará de estar disponible para nuevos cargos. Su historial se conserva y podés reactivarlo después.',
+      '“{{name}}” dejará de estar disponible para nuevos cargos. Su historial se conserva y puedes reactivarlo después.',
   },
   calendar: {
     title: 'Disponibilidad',
-    subtitle: 'Consultá el inventario por tipo y fecha.',
+    subtitle: 'Consulta el inventario por tipo y fecha.',
     today: 'Hoy',
     allTypes: 'Todos',
     typeFilter: 'Filtrar por tipo de alojamiento',
@@ -376,17 +415,17 @@ const es = {
     recordPayment: 'Registrar pago',
     confirmPaymentClose: 'Registrar pago y cerrar',
     closePaymentHelp:
-      'Para cerrar, registrá exactamente {{amount}} con el pago incluido.',
+      'Para cerrar, registra exactamente {{amount}} con el pago incluido.',
     closeBalanceRequired:
       'Para cerrar, el saldo debe quedar exactamente en cero.',
     closeCredit: 'No se puede cerrar mientras exista saldo a favor.',
     paymentError: 'No pudimos registrar el pago.',
-    paymentValidation: 'Revisá monto, fecha, medio de pago y nota del pago.',
+    paymentValidation: 'Revisa monto, fecha, medio de pago y nota del pago.',
     paymentTooLarge:
       'El pago no puede superar el saldo pendiente de este alojamiento.',
     confirmClose: 'Confirmar cierre',
     versionConflict:
-      'El alojamiento cambió. Volvé a previsualizar el total antes de confirmar.',
+      'El alojamiento cambió. Vuelve a previsualizar el total antes de confirmar.',
     quoteError: 'No pudimos calcular el total.',
     closeError: 'No pudimos cerrar el alojamiento.',
     loadError: 'No pudimos cargar el alojamiento.',
@@ -426,32 +465,32 @@ const es = {
     totalAtArrival: 'Total al ingresar',
     reservationQuoteError: 'No pudimos cotizar el ingreso de la reserva.',
     reservationChanged:
-      'La reserva cambió. Cerrá esta ventana y actualizá la agenda.',
+      'La reserva cambió. Cierra esta ventana y actualiza la agenda.',
     reservationSaveError:
-      'No pudimos registrar el check-in de la reserva. Intentá de nuevo.',
+      'No pudimos registrar el check-in de la reserva. Intenta de nuevo.',
     saving: 'Registrando…',
     success: 'Ingreso de {{name}} registrado.',
     saveError:
-      'No pudimos registrar el ingreso. Tus datos siguen acá; intentá de nuevo.',
+      'No pudimos registrar el ingreso. Tus datos siguen aquí; intenta de nuevo.',
   },
   validation: {
     money:
-      'Ingresá un importe válido en {{currency}} con la precisión permitida.',
-    invalid: 'Revisá este campo.',
-    nationality: 'Seleccioná un país de la lista.',
-    phoneCountryCode: 'Seleccioná el país del teléfono.',
+      'Ingresa un importe válido en {{currency}} con la precisión permitida.',
+    invalid: 'Revisa este campo.',
+    nationality: 'Selecciona un país de la lista.',
+    phoneCountryCode: 'Selecciona el país del teléfono.',
     phone:
-      'Revisá el número y el país seleccionado; escribilo sin prefijo internacional.',
-    required: 'Ingresá el nombre del responsable.',
-    count: 'Ingresá un número entero igual o mayor que cero.',
-    date: 'Ingresá una fecha válida.',
+      'Revisa el número y el país seleccionado; escríbelo sin prefijo internacional.',
+    required: 'Ingresa el nombre del responsable.',
+    count: 'Ingresa un número entero igual o mayor que cero.',
+    date: 'Ingresa una fecha válida.',
     futureArrival: 'El ingreso no puede ser posterior a hoy.',
-    peopleRequired: 'Agregá al menos una persona al grupo.',
+    peopleRequired: 'Agrega al menos una persona al grupo.',
     departureBeforeArrival: 'La salida no puede ser anterior al ingreso.',
   },
   errors: {
     startup:
-      'No se pudo iniciar la aplicación. Recargá la página para reintentar.',
+      'No se pudo iniciar la aplicación. Recarga la página para reintentar.',
   },
 } as const
 

@@ -107,7 +107,7 @@ function ensureAccepted(
   if (accepted === undefined || !Number.isSafeInteger(accepted) || accepted < 0)
     throw conflict('Debe aceptar el total cotizado', 'PRICE_CHANGED')
   if (accepted !== total)
-    throw conflict('El precio cambió; cotizá nuevamente', 'PRICE_CHANGED')
+    throw conflict('El precio cambió; cotiza nuevamente', 'PRICE_CHANGED')
 }
 
 function parseCreate(raw: unknown): CreateInput {
@@ -532,7 +532,7 @@ export class ReservationService {
           )
         if (row.version !== patch.version)
           throw conflict(
-            'La reserva cambió; actualizá la pantalla',
+            'La reserva cambió; actualiza la pantalla',
             'STALE_RESERVATION',
           )
         const replacement = this.replacement(row, patch)
@@ -575,7 +575,7 @@ export class ReservationService {
           )
         if (row.version !== patch.version)
           throw conflict(
-            'La reserva cambió; actualizá la pantalla',
+            'La reserva cambió; actualiza la pantalla',
             'STALE_RESERVATION',
           )
         const replacement = this.replacement(row, patch)
@@ -656,7 +656,7 @@ export class ReservationService {
         if (row.status === target) return reservationView(manager, context, row)
         if (row.version !== parsed.data.version)
           throw conflict(
-            'La reserva cambió; actualizá la pantalla',
+            'La reserva cambió; actualiza la pantalla',
             'STALE_RESERVATION',
           )
         const allowed =
@@ -802,7 +802,7 @@ export class ReservationService {
     this.assertCheckedInEditShape(patch)
     if (row.version !== patch.version)
       throw conflict(
-        'La reserva cambió; actualizá la pantalla',
+        'La reserva cambió; actualiza la pantalla',
         'STALE_RESERVATION',
       )
     this.checkedInCheckout(row, patch.checkOutDate!, context.camping.timezone)
@@ -841,7 +841,7 @@ export class ReservationService {
     this.assertCheckedInEditShape(patch)
     if (row.version !== patch.version)
       throw conflict(
-        'La reserva cambió; actualizá la pantalla',
+        'La reserva cambió; actualiza la pantalla',
         'STALE_RESERVATION',
       )
     this.checkedInCheckout(row, patch.checkOutDate!, context.camping.timezone)
@@ -1093,7 +1093,7 @@ export class ReservationService {
       !input.capacityOverrideReason?.trim()
     )
       throw conflict(
-        'Indicá el motivo para exceder la capacidad',
+        'Indica el motivo para exceder la capacidad',
         'CAPACITY_OVERRIDE_REQUIRED',
       )
     await assertUnitAvailable(

@@ -41,7 +41,7 @@ it('keeps an incomplete range visible while asking for its end', () => {
     </ThemeProvider>,
   )
   expect(markup).toContain('31 de octubre')
-  expect(markup).toContain('Elegí una fecha')
+  expect(markup).toContain('Elige una fecha')
   expect(markup).not.toContain('Invalid Date')
 })
 

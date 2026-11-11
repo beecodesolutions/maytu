@@ -45,6 +45,7 @@ const pricing = {
 before(async () => {
   admin = createDataSource()
   await admin.initialize()
+  await admin.query('CREATE SCHEMA IF NOT EXISTS camping_private')
   await admin.runMigrations()
   await admin.query(`CREATE ROLE ${role} NOLOGIN`)
   await promisify(execFile)(
@@ -127,7 +128,7 @@ after(async () => {
 })
 test('runtime provisioning grants only the required bed and configuration privileges', async () => {
   const [p] = await admin.query(
-    `SELECT has_table_privilege($1,'camping_private.accommodation_beds','SELECT,INSERT,UPDATE') AS beds,has_table_privilege($1,'camping_private.accommodation_beds','DELETE') AS delete_beds,has_table_privilege($1,'camping_private.reservation_beds','SELECT,INSERT,DELETE') AS allocations,has_table_privilege($1,'camping_private.bed_occupancy','SELECT,INSERT,DELETE') AS occupancy,has_table_privilege($1,'camping_private.bed_occupancy','UPDATE') AS update_occupancy,has_column_privilege($1,'camping_private.campings','infants_consume_capacity','UPDATE') AS infants,has_column_privilege($1,'camping_private.accommodation_types','pricing','UPDATE') AS pricing,has_column_privilege($1,'camping_private.campings','country','UPDATE') AS country`,
+    `SELECT has_table_privilege($1,'camping_private.accommodation_beds','SELECT,INSERT,UPDATE') AS beds,has_table_privilege($1,'camping_private.accommodation_beds','DELETE') AS delete_beds,has_table_privilege($1,'camping_private.reservation_beds','SELECT,INSERT,DELETE') AS allocations,has_table_privilege($1,'camping_private.bed_occupancy','SELECT,INSERT,DELETE') AS occupancy,has_table_privilege($1,'camping_private.bed_occupancy','UPDATE') AS update_occupancy,has_column_privilege($1,'camping_private.campings','infants_consume_capacity','UPDATE') AS infants,has_column_privilege($1,'camping_private.accommodation_types','pricing','UPDATE') AS pricing,has_column_privilege($1,'camping_private.campings','stable_key','UPDATE') AS stable_key`,
     [role],
   )
   assert.deepEqual(p, {
@@ -138,7 +139,7 @@ test('runtime provisioning grants only the required bed and configuration privil
     update_occupancy: false,
     infants: true,
     pricing: true,
-    country: false,
+    stable_key: false,
   })
   await assert.rejects(
     () =>
@@ -149,9 +150,181 @@ test('runtime provisioning grants only the required bed and configuration privil
   )
 })
 test('restricted runtime supports pricing settings, allocation, edits and cancellation trigger', async () => {
-  const campingService = new CampingService(runtime, new StayService(runtime))
+  const stayService = new StayService(runtime)
+  const campingService = new CampingService(runtime, stayService)
+  const expected = {
+    name: context.camping.name,
+    timezone: context.camping.timezone,
+  }
+  const next = { name: 'Maytu runtime', timezone: 'America/Managua' }
+  const updated = await campingService.updateProfile(context, {
+    ...next,
+    expected,
+  })
+  assert.equal(updated.name, next.name)
+  assert.equal(updated.timezone, next.timezone)
+  assert.equal(updated.currency, context.camping.currency)
+  await assert.rejects(
+    campingService.updateProfile(context, {
+      ...next,
+      name: 'Conflicting edit',
+      expected,
+    }),
+    {
+      response: {
+        code: 'STALE_CAMPING_PROFILE',
+        message: 'La configuración cambió. Revisa los datos actuales.',
+      },
+    },
+  )
+  await assert.rejects(
+    campingService.updateProfile(context, {
+      ...next,
+      timezone: 'Mars/Olympus',
+      expected: next,
+    }),
+    { status: 400 },
+  )
+  await assert.rejects(
+    campingService.updateProfile(context, {
+      ...next,
+      currency: 'USD',
+      expected: next,
+    }),
+    { status: 400 },
+  )
+  const regionalBefore = {
+    ...next,
+    country: updated.country,
+    currency: updated.currency,
+  }
+  const regionalAfter = { ...regionalBefore, country: 'NI', currency: 'USD' }
+  const regionalProfile = await campingService.updateProfile(context, {
+    ...regionalAfter,
+    expected: regionalBefore,
+  })
+  assert.equal(regionalProfile.country, 'NI')
+  assert.equal(regionalProfile.currency, 'USD')
+  await assert.rejects(
+    campingService.updateProfile(context, {
+      ...regionalAfter,
+      country: 'CR',
+      expected: regionalBefore,
+    }),
+    {
+      response: {
+        code: 'STALE_CAMPING_PROFILE',
+        message: 'La configuración cambió. Revisa los datos actuales.',
+      },
+    },
+  )
+  await campingService.updateProfile(context, {
+    ...expected,
+    country: regionalBefore.country,
+    currency: regionalBefore.currency,
+    expected: regionalAfter,
+  })
   await campingService.updateOccupancySettings(context, {
     infantsConsumeCapacity: false,
+  })
+  const previousAges = context.camping.ageRanges
+  const campingType = await types.createType(context, {
+    name: 'Runtime camping',
+    inventoryMode: 'unlimited',
+    maxOccupancy: null,
+    baseNightlyPriceMinor: 0,
+    enabled: true,
+  })
+  const reservationInput = {
+    accommodationTypeId: campingType.id,
+    checkInDate: '2035-02-01',
+    checkOutDate: '2035-02-02',
+    adults: 1,
+    children: 0,
+    infants: 0,
+  }
+  const initialQuote = await bookings.quote(context, reservationInput)
+  const reservation = await bookings.create(context, {
+    ...reservationInput,
+    responsibleName: 'Guest with frozen rates',
+    idempotencyKey: randomUUID(),
+    acceptedTotalMinor: initialQuote.priceSnapshot.totalMinor,
+  })
+  const stayInput = {
+    responsibleName: 'Guest with frozen ages',
+    document: '',
+    nationality: '',
+    phone: '',
+    arrivalDate: '2025-01-01',
+    estimatedDeparture: '',
+    adults: 1,
+    children: 0,
+    infants: 0,
+    hasVehicle: false,
+    vehicleDescription: '',
+    licensePlate: '',
+    location: '',
+  }
+  const { id: stayId } = await stayService.create(context, stayInput)
+  const openStay = await stayService.get(context, stayId)
+  await assert.rejects(
+    campingService.updateProfile(context, { ...next, expected }),
+    (error) => error.getResponse().code === 'ACTIVE_STAYS',
+  )
+  const ageRanges = {
+    infants: { min: 0, max: 2 },
+    children: { min: 3, max: 11 },
+    adults: { min: 12, max: null },
+  }
+  const profile = await campingService.updateOccupancySettings(context, {
+    ageRanges,
+    expectedAgeRanges: previousAges,
+  })
+  assert.deepEqual(profile.ageRanges, ageRanges)
+  assert.equal(profile.infantsConsumeCapacity, false)
+  await assert.rejects(
+    campingService.updateOccupancySettings(context, {
+      ageRanges: previousAges,
+      expectedAgeRanges: previousAges,
+    }),
+    (error) => error.getResponse().code === 'STALE_AGE_RANGES',
+  )
+  const newQuote = await bookings.quote(context, reservationInput)
+  assert.deepEqual(newQuote.priceSnapshot.ageRanges, ageRanges)
+  assert.deepEqual(
+    (await bookings.get(context, reservation.id)).priceSnapshot,
+    reservation.priceSnapshot,
+  )
+  assert.deepEqual(
+    (await stayService.get(context, stayId)).ageRanges,
+    previousAges,
+  )
+  const closed = await stayService.close(context, stayId, {
+    version: openStay.version,
+    departureDate: '2025-01-02',
+    payment: {
+      amountMinor: openStay.rates.adults,
+      paidOn: '2025-01-02',
+      method: 'cash',
+      idempotencyKey: randomUUID(),
+    },
+  })
+  await campingService.updateProfile(context, { ...next, expected })
+  const historical = await stayService.get(context, stayId)
+  assert.deepEqual(historical.closure, closed.closure)
+  assert.deepEqual(historical.account, closed.account)
+  assert.deepEqual(
+    (await bookings.get(context, reservation.id)).priceSnapshot,
+    reservation.priceSnapshot,
+  )
+  const { id: newStayId } = await stayService.create(context, stayInput)
+  assert.deepEqual(
+    (await stayService.get(context, newStayId)).ageRanges,
+    ageRanges,
+  )
+  await campingService.updateOccupancySettings(context, {
+    ageRanges: previousAges,
+    expectedAgeRanges: ageRanges,
   })
   const type = await types.createType(context, {
     name: 'Runtime dorm',

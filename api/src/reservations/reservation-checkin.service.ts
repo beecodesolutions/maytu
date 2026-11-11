@@ -57,7 +57,7 @@ function parseCheckIn(raw: unknown): ReservationCheckIn {
 
 function acceptedTotal(value: number, expected: number): void {
   if (!Number.isSafeInteger(value) || value < 0 || value !== expected)
-    throw conflict('El precio cambió; cotizá nuevamente', 'PRICE_CHANGED')
+    throw conflict('El precio cambió; cotiza nuevamente', 'PRICE_CHANGED')
 }
 
 function reservationBefore(row: ReservationEntity): Record<string, unknown> {
@@ -159,7 +159,7 @@ export class ReservationCheckInService {
           )
         if (reservation.version !== input.version)
           throw conflict(
-            'La reserva cambió; actualizá la pantalla',
+            'La reserva cambió; actualiza la pantalla',
             'STALE_RESERVATION',
           )
         const snapshot = await this.snapshotForArrival(
@@ -216,7 +216,7 @@ export class ReservationCheckInService {
           )
         if (reservation.version !== input.version)
           throw conflict(
-            'La reserva cambió; actualizá la pantalla',
+            'La reserva cambió; actualiza la pantalla',
             'STALE_RESERVATION',
           )
 

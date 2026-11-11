@@ -59,30 +59,38 @@ export class StayService {
   constructor(private readonly dataSource: DataSource) {}
 
   async create(context: AuthContext, raw: unknown): Promise<{ id: string }> {
-    const camping = await this.loadCamping(context.camping.id)
-    const parsed = checkInSchemaForTimezone(camping.timezone).safeParse(raw)
-    if (!parsed.success) throw zodBadRequest(parsed.error)
-    const stay = this.dataSource.getRepository(StayEntity).create({
-      ...parsed.data,
-      campingId: camping.id,
-      createdById: context.user.id,
-      estimatedDeparture: parsed.data.estimatedDeparture || null,
-      currency: camping.currency,
-      moneyDecimals: camping.moneyDecimals,
-      ageRanges: camping.ageRanges,
-      rates: camping.rates,
-      version: 1,
-      closedAt: null,
-      closedById: null,
-      closure: null,
-      accommodationPriceSnapshot: null,
-    })
-    this.calculate(
-      { ...stay, extras: [], payments: [] } as StayEntity,
-      stay.arrivalDate,
+    return withInventoryTransaction(
+      this.dataSource,
+      context,
+      async (manager) => {
+        const camping = await manager.findOneByOrFail(CampingEntity, {
+          id: context.camping.id,
+        })
+        const parsed = checkInSchemaForTimezone(camping.timezone).safeParse(raw)
+        if (!parsed.success) throw zodBadRequest(parsed.error)
+        const stay = manager.create(StayEntity, {
+          ...parsed.data,
+          campingId: camping.id,
+          createdById: context.user.id,
+          estimatedDeparture: parsed.data.estimatedDeparture || null,
+          currency: camping.currency,
+          moneyDecimals: camping.moneyDecimals,
+          ageRanges: camping.ageRanges,
+          rates: camping.rates,
+          version: 1,
+          closedAt: null,
+          closedById: null,
+          closure: null,
+          accommodationPriceSnapshot: null,
+        })
+        this.calculate(
+          { ...stay, extras: [], payments: [] } as StayEntity,
+          stay.arrivalDate,
+        )
+        const saved = await manager.save(StayEntity, stay)
+        return { id: saved.id }
+      },
     )
-    const saved = await this.dataSource.getRepository(StayEntity).save(stay)
-    return { id: saved.id }
   }
 
   async list(
@@ -272,7 +280,7 @@ export class StayService {
               )
               if (!existing)
                 throw conflict(
-                  'La estadía ya fue cerrada; registrá el pago por separado',
+                  'La estadía ya fue cerrada; registra el pago por separado',
                   'STAY_CLOSED',
                 )
               this.assertSamePayment(existing, stay.id, parsed.data.payment)
@@ -281,7 +289,7 @@ export class StayService {
           }
           if (stay.version !== parsed.data.version)
             throw conflict(
-              'La estadía cambió; actualizá el presupuesto',
+              'La estadía cambió; actualiza el presupuesto',
               'STALE_STAY',
             )
           if (reservation && reservation.status !== 'checked_in')
@@ -505,7 +513,7 @@ export class StayService {
     const stay = await this.lockStay(manager, campingId, id)
     if ((stay.reservationId ?? null) !== (reservation?.id ?? null))
       throw conflict(
-        'La reserva vinculada cambió; actualizá la pantalla',
+        'La reserva vinculada cambió; actualiza la pantalla',
         'STALE_STAY',
       )
     stay.reservation = reservation
@@ -787,7 +795,7 @@ export class StayService {
     const accepted = reservation?.checkOutDate ?? stay.estimatedDeparture
     if (!accepted || departureDate !== accepted)
       throw conflict(
-        'La salida de la reserva cambió; cotizá o actualizá la reserva antes de cerrar la estadía',
+        'La salida de la reserva cambió; cotiza o actualiza la reserva antes de cerrar la estadía',
         'RESERVATION_DATES_CHANGED',
       )
   }
@@ -803,14 +811,6 @@ export class StayService {
   private asBreakdown(value: ClosureValue): CostBreakdown {
     const { closedAt: _closedAt, closedBy: _closedBy, ...breakdown } = value
     return breakdown
-  }
-
-  private async loadCamping(id: string): Promise<CampingEntity> {
-    const camping = await this.dataSource
-      .getRepository(CampingEntity)
-      .findOne({ where: { id } })
-    if (!camping) throw notFound('Camping')
-    return camping
   }
 
   private pageNumber(value: string | undefined, fallback: number): number {

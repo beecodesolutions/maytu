@@ -8,6 +8,28 @@ const sectionPaths = {
   settings: '/configuracion',
 } as const
 
+const settingsTabPaths = {
+  accommodations: `${sectionPaths.settings}/alojamientos`,
+  general: `${sectionPaths.settings}/general`,
+  extras: `${sectionPaths.settings}/extras`,
+} as const
+
+type SettingsTab = keyof typeof settingsTabPaths
+
+export function settingsTabHref(tab: SettingsTab) {
+  return settingsTabPaths[tab]
+}
+
+function findSettingsTab(path: string): SettingsTab | undefined {
+  return (Object.keys(settingsTabPaths) as SettingsTab[]).find(
+    (tab) => settingsTabHref(tab) === path,
+  )
+}
+
+export function settingsTabFromPath(pathname: string): SettingsTab {
+  return findSettingsTab(pathname.replace(/\/$/, '')) ?? 'accommodations'
+}
+
 export type WorkspaceSection = keyof typeof sectionPaths
 
 export function workspaceHref(section: WorkspaceSection) {
@@ -16,7 +38,7 @@ export function workspaceHref(section: WorkspaceSection) {
 
 export function workspaceSectionFromPath(pathname: string): WorkspaceSection {
   const path = pathname.replace(/\/$/, '')
-  if (path === '/mas') return 'settings'
+  if (path === '/mas' || findSettingsTab(path)) return 'settings'
   for (const section of Object.keys(sectionPaths) as WorkspaceSection[]) {
     if (workspaceHref(section) === path) return section
   }
@@ -25,11 +47,15 @@ export function workspaceSectionFromPath(pathname: string): WorkspaceSection {
 
 export function migrateWorkspaceHash() {
   if (!window.location.hash.startsWith('#/')) return
-  const section = workspaceSectionFromPath(window.location.hash.slice(1))
+  const path = window.location.hash.slice(1).replace(/\/$/, '')
+  const tab = findSettingsTab(path)
+  const href = tab
+    ? settingsTabHref(tab)
+    : workspaceHref(workspaceSectionFromPath(path))
   window.history.replaceState(
     window.history.state,
     '',
-    `${workspaceHref(section)}${window.location.search}`,
+    `${href}${window.location.search}`,
   )
 }
 
@@ -69,4 +95,12 @@ export function useWorkspaceSection() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }, [section])
   return section
+}
+
+export function useSettingsTab() {
+  return useSyncExternalStore(
+    subscribe,
+    () => settingsTabFromPath(window.location.pathname),
+    () => 'accommodations' as const,
+  )
 }

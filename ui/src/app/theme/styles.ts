@@ -1,4 +1,5 @@
 import { dateRangeCalendar } from './calendar'
+import { typography } from './typography'
 import { alpha, type Theme } from '@mui/material/styles'
 import type { SxProps } from '@mui/material'
 import type { CSSProperties } from 'react'
@@ -58,13 +59,103 @@ export const checkoutActionStyles = (theme: Theme) => {
 }
 
 export const uiStyles = {
+  sectionCard: (height?: CSSProperties['height']): SxProps<Theme> => ({
+    p: { xs: 2, sm: 3 },
+    borderRadius: 2,
+    minWidth: 0,
+    ...(height === undefined ? {} : { height }),
+  }),
+  sectionCardTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+    overflowWrap: 'anywhere',
+    '& svg': { flexShrink: 0 },
+  } satisfies SxProps<Theme>,
+  sectionForm: {
+    borderTop: '1px solid',
+    borderColor: 'divider',
+    pt: 2,
+    minWidth: 0,
+  } satisfies SxProps<Theme>,
+  sectionTopGap: { mt: 3 } satisfies SxProps<Theme>,
+  sectionCardHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 2,
+    flexWrap: 'wrap',
+  } satisfies SxProps<Theme>,
+  tabbedSection: { minWidth: 0 } satisfies SxProps<Theme>,
+  fileCard: ((theme) => ({
+    p: { xs: 2, sm: 3 },
+    borderRadius: 2,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    minWidth: 0,
+    boxShadow: `0 8px 28px ${alpha(theme.palette.navigation.main, theme.palette.mode === 'dark' ? 0.24 : 0.08)}`,
+  })) satisfies SxProps<Theme>,
+  fileSection: {
+    minWidth: 0,
+    '&:not(:first-child)': {
+      borderTop: '1px solid',
+      borderColor: 'divider',
+      pt: 3,
+    },
+  } satisfies SxProps<Theme>,
+  sectionTabs: {
+    minWidth: 0,
+    minHeight: 56,
+    position: 'relative',
+    zIndex: 1,
+    mb: '-1px',
+    '& .MuiTabs-list': { gap: 1, alignItems: 'stretch' },
+    '& .MuiTabs-indicator': { display: 'none' },
+    '& .MuiTab-root': {
+      minHeight: 56,
+      ...typography.sectionTab,
+      width: 184,
+      minWidth: 184,
+      flex: '0 0 184px',
+      px: 2,
+      py: 1.5,
+      bgcolor: 'action.hover',
+      color: 'text.secondary',
+      border: '1px solid',
+      borderColor: 'transparent',
+      borderTopLeftRadius: 1,
+      borderTopRightRadius: 1,
+      transition: 'background-color 160ms ease, color 160ms ease',
+      '&:hover': { bgcolor: 'action.selected', color: 'text.primary' },
+      '&.Mui-selected': {
+        bgcolor: 'background.paper',
+        color: 'text.primary',
+        borderColor: 'divider',
+        borderBottomColor: 'background.paper',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 4,
+          bgcolor: 'primary.main',
+        },
+      },
+      '&.Mui-focusVisible': {
+        outline: '2px solid',
+        outlineColor: 'primary.main',
+        outlineOffset: -5,
+      },
+      '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+    },
+  } satisfies SxProps<Theme>,
   availabilityWorkspace: {
     display: 'grid',
     gridTemplateColumns: {
       xs: 'minmax(0, 1fr)',
       md: 'minmax(0, 1.3fr) minmax(0, 1fr)',
     },
-    gap: 2,
+    gap: 3,
     alignItems: 'start',
     '& > *': { minWidth: 0 },
   } satisfies SxProps<Theme>,
@@ -186,7 +277,7 @@ export const uiStyles = {
   loginScreenPaper: {
     p: 3,
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 380,
   } satisfies SxProps<Theme>,
   boldText: { fontWeight: 700 } satisfies SxProps<Theme>,
   formColumn: {
@@ -348,10 +439,16 @@ export const uiStyles = {
     },
     pb: {
       xs: `calc(${theme.spacing(workspaceSpacing.mobileNavigationHeight + workspaceSpacing.floatingActionGap + workspaceSpacing.floatingActionHeight + workspaceSpacing.contentBottomGap)} + env(safe-area-inset-bottom))`,
-      md: 4,
+      md:
+        workspaceSpacing.floatingActionHeight +
+        workspaceSpacing.floatingActionGap +
+        workspaceSpacing.contentBottomGap,
     },
   })) satisfies SxProps<Theme>,
-  panelPadding: { p: 2 } satisfies SxProps<Theme>,
+  panelPadding: {
+    p: { xs: 2, sm: 3 },
+    borderRadius: 2,
+  } satisfies SxProps<Theme>,
   stayListListItem: {
     '&:last-child': { borderBottom: 0 },
     alignItems: { xs: 'center', sm: 'stretch' },
@@ -704,6 +801,11 @@ export const uiStyles = {
     justifyContent: 'flex-end',
     flexShrink: 0,
   } satisfies SxProps<Theme>,
+  inlineActionLink: {
+    px: 0,
+    textDecoration: 'underline',
+    '&:hover': { textDecoration: 'underline' },
+  } satisfies SxProps<Theme>,
   reservationRowIconButton: {
     width: 44,
     height: 44,
@@ -712,21 +814,37 @@ export const uiStyles = {
     '&:hover': { bgcolor: 'success.dark' },
   } satisfies SxProps<Theme>,
   dashboardTodayPaper: { p: 2, borderRadius: 2 } satisfies SxProps<Theme>,
-  dashboardTodayTypography3: ((theme) => ({
-    mb: 0.5,
-    fontWeight: 700,
-    color: theme.palette.mode === 'dark' ? 'success.light' : 'success.dark',
-  })) satisfies SxProps<Theme>,
-  dashboardTodayTypography4: ((theme) => ({
-    mb: 0.5,
-    fontWeight: 700,
-    color: theme.palette.mode === 'dark' ? 'warning.light' : 'warning.dark',
-  })) satisfies SxProps<Theme>,
-  dashboardTodayTypography5: ((theme) => ({
-    mb: 0.5,
-    fontWeight: 700,
-    color: theme.palette.mode === 'dark' ? 'error.light' : 'error.dark',
-  })) satisfies SxProps<Theme>,
+  dashboardTodaySummary: {
+    display: 'block',
+    listStyle: 'none',
+    cursor: 'pointer',
+    borderRadius: 1,
+    '@media (hover: hover)': { '&:hover': { bgcolor: 'action.hover' } },
+    '&::-webkit-details-marker': { display: 'none' },
+    '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main' },
+    '& svg': { ml: 'auto', flexShrink: 0 },
+    'details[open] > & svg': { transform: 'rotate(180deg)' },
+  } satisfies SxProps<Theme>,
+  dashboardTodayHeading:
+    (overdue: boolean): SxProps<Theme> =>
+    (theme) => ({
+      display: 'flex',
+      alignItems: 'center',
+      gap: 1,
+      minHeight: 44,
+      color: overdue
+        ? theme.palette.error[theme.palette.mode === 'dark' ? 'light' : 'dark']
+        : 'text.primary',
+    }),
+  dashboardTodayCount: {
+    flexShrink: 0,
+    minWidth: '2em',
+    px: 0.75,
+    borderRadius: 4,
+    bgcolor: 'action.selected',
+    textAlign: 'center',
+    fontVariantNumeric: 'tabular-nums',
+  } satisfies SxProps<Theme>,
   campingWorkspaceBox: {
     maxWidth: 640,
     mx: 'auto',
@@ -814,14 +932,12 @@ export const uiStyles = {
     mr: 'auto',
     overflowWrap: 'anywhere',
   } satisfies SxProps<Theme>,
-  settingsPanelStack: { mt: 3 } satisfies SxProps<Theme>,
   tabletAlignCenter: {
     alignItems: { sm: 'center' },
   } satisfies SxProps<Theme>,
   campingWorkspaceButton2: {
     textDecoration: 'underline',
   } satisfies SxProps<Theme>,
-  settingsPanelDivider: { my: 2 } satisfies SxProps<Theme>,
   templateRowBox: {
     ...formGridStyles,
     gridTemplateColumns: {

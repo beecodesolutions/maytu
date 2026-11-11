@@ -6,6 +6,7 @@ export const operationalFont =
   '"Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
 
 export type MaytuTypographyVariant =
+  | 'sectionTab'
   | 'pageTitle'
   | 'metric'
   | 'metricLarge'
@@ -36,6 +37,12 @@ declare module '@mui/material/Typography' {
 
 export const typography: TypographyVariantsOptions = {
   fontFamily: operationalFont,
+  sectionTab: {
+    fontFamily: operationalFont,
+    fontSize: '1rem',
+    fontWeight: 600,
+    lineHeight: 1.5,
+  },
   h1: {
     fontFamily: editorialFont,
     fontSize: '2.75rem',
@@ -49,10 +56,12 @@ export const typography: TypographyVariantsOptions = {
     lineHeight: 1.2,
   },
   h3: {
-    fontFamily: editorialFont,
-    fontSize: '2rem',
-    fontWeight: 600,
-    lineHeight: 1.2,
+    fontFamily: operationalFont,
+    fontSize: '1rem',
+    fontWeight: 700,
+    lineHeight: 1.75,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
   },
   h4: {
     fontFamily: editorialFont,

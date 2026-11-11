@@ -1,5 +1,8 @@
 import { delay, http, HttpResponse } from 'msw'
 import {
+  ageRangesSchema,
+  campingProfileUpdateSchema,
+  currencyDecimals,
   pilotCamping,
   pilotExtras,
   paymentInputSchema,
@@ -13,6 +16,7 @@ import {
   quoteRequestSchema,
   ratesSchema,
   moneySettingsSchema,
+  occupancySettingsSchema,
   todayInTimezone,
 } from '@camping/contracts'
 import type {
@@ -80,10 +84,17 @@ function stayAccount(stay: Stay, totalMinor?: number): StayAccount {
   }
 }
 function updateProfile() {
-  profile.pendingAmountMinor = stays.reduce((sum, stay) => {
-    const balance = stayAccount(stay).balanceMinor
-    return sum + Math.max(0, balance)
-  }, 0)
+  const balances = new Map<string, number>()
+  for (const stay of stays) {
+    const amount = stayAccount(stay).balanceMinor
+    if (amount > 0)
+      balances.set(stay.currency, (balances.get(stay.currency) ?? 0) + amount)
+  }
+  profile.pendingAmountMinor = balances.get(profile.currency) ?? 0
+  profile.pendingBalances = [...balances].map(([currency, amountMinor]) => ({
+    currency,
+    amountMinor,
+  }))
   profile.activeGroups = stays.filter((stay) => !stay.closure).length
   profile.activePeople = stays
     .filter((stay) => !stay.closure)
@@ -369,6 +380,68 @@ export const handlers = [
     stay.extras = stay.extras.filter((extra) => extra.id !== params.extraId)
     stay.version += 1
     return HttpResponse.json(stay)
+  }),
+  http.patch('*/api/camping', async ({ request }) => {
+    if (!loggedIn) return jsonError(401)
+    const parsed = campingProfileUpdateSchema.safeParse(await request.json())
+    if (!parsed.success) return jsonError(400)
+    const { expected, ...next } = parsed.data
+    const changesCurrency =
+      next.currency !== undefined && next.currency !== profile.currency
+    const changesTimezone = next.timezone !== profile.timezone
+    if (
+      !changesCurrency &&
+      !changesTimezone &&
+      next.name === profile.name &&
+      (next.country === undefined || next.country === profile.country)
+    )
+      return HttpResponse.json(profile)
+    if (
+      expected.name !== profile.name ||
+      expected.timezone !== profile.timezone ||
+      (expected.country !== undefined &&
+        expected.country !== profile.country) ||
+      (expected.currency !== undefined &&
+        expected.currency !== profile.currency)
+    )
+      return HttpResponse.json(
+        { code: 'STALE_CAMPING_PROFILE' },
+        { status: 409 },
+      )
+    if (
+      (changesTimezone || changesCurrency) &&
+      stays.some((stay) => !stay.closure)
+    )
+      return HttpResponse.json(
+        {
+          code: changesCurrency ? 'ACTIVE_STAYS_CURRENCY' : 'ACTIVE_STAYS',
+        },
+        { status: 409 },
+      )
+    if (
+      next.currency &&
+      changesCurrency &&
+      currencyDecimals(next.currency) !== currencyDecimals(profile.currency)
+    )
+      return HttpResponse.json({ code: 'CURRENCY_PRECISION' }, { status: 409 })
+    Object.assign(profile, next)
+    updateProfile()
+    return HttpResponse.json(profile)
+  }),
+  http.patch('*/api/camping/occupancy-settings', async ({ request }) => {
+    if (!loggedIn) return jsonError(401)
+    const parsed = occupancySettingsSchema.safeParse(await request.json())
+    if (!parsed.success) return jsonError(400)
+    const { expectedAgeRanges, ...settings } = parsed.data
+    const currentAges = JSON.stringify(ageRangesSchema.parse(profile.ageRanges))
+    if (
+      expectedAgeRanges &&
+      JSON.stringify(expectedAgeRanges) !== currentAges &&
+      JSON.stringify(settings.ageRanges) !== currentAges
+    )
+      return HttpResponse.json({ code: 'STALE_AGE_RANGES' }, { status: 409 })
+    Object.assign(profile, settings)
+    return HttpResponse.json(profile)
   }),
   http.patch('*/api/camping/money-settings', async ({ request }) => {
     if (!loggedIn) return jsonError(401)

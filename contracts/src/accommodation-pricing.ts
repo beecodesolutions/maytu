@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import { moneySchema, ratesSchema, safeCount } from './contract-primitives'
+import {
+  ageRangesSchema,
+  moneySchema,
+  ratesSchema,
+  safeCount,
+} from './contract-primitives'
 
 export const guestCompositionSchema = z.strictObject({
   adults: safeCount,
@@ -107,9 +112,23 @@ export const accommodationBedSchema = accommodationBedInputSchema.extend({
   id: z.uuid(),
   unitId: z.uuid(),
 })
-export const occupancySettingsSchema = z.strictObject({
-  infantsConsumeCapacity: z.boolean(),
-})
+export const occupancySettingsSchema = z
+  .strictObject({
+    infantsConsumeCapacity: z.boolean().optional(),
+    ageRanges: ageRangesSchema.optional(),
+    expectedAgeRanges: ageRangesSchema.optional(),
+  })
+  .refine(
+    (settings) =>
+      settings.infantsConsumeCapacity !== undefined ||
+      settings.ageRanges !== undefined,
+    'Indica al menos un ajuste de ocupación.',
+  )
+  .refine(
+    ({ ageRanges, expectedAgeRanges }) => !expectedAgeRanges || !!ageRanges,
+    'Indica los nuevos rangos de edad.',
+  )
+export type OccupancySettings = z.infer<typeof occupancySettingsSchema>
 
 /** The type's existing baseNightlyPriceMinor remains the canonical base rate. */
 export const accommodationPricingSettingsSchema =

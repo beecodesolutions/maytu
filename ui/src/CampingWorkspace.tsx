@@ -1,4 +1,8 @@
+import TabbedSection from './components/TabbedSection'
+import SectionTabs from './components/SectionTabs'
+import SectionCard from './components/SectionCard'
 import PricingSettings from './PricingSettings'
+import CampingProfileSettings from './CampingProfileSettings'
 import { uiProps, uiStyles } from './app/theme'
 import AccommodationFilter from './AccommodationFilter'
 import { useAppDispatch, useAppSelector } from './app/hooks'
@@ -10,7 +14,11 @@ import { scrollWorkspaceToTop } from './app/workspaceScroll'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -27,15 +35,21 @@ import {
   Skeleton,
   Stack,
   Tab,
-  Tabs,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
-import { Pencil, Plus, RotateCcw, Settings, Trash2 } from 'lucide-react'
+import {
+  ChevronDown,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Settings,
+  Trash2,
+} from 'lucide-react'
 import LucideIcon from './components/LucideIcon'
 import MoneyField from './components/MoneyField'
-import { paymentInputSchema } from '@camping/contracts'
+import { ageRangesSchema, paymentInputSchema } from '@camping/contracts'
 import type {
   CampingProfile,
   PaymentInput,
@@ -65,6 +79,7 @@ import {
   useUpdateExtraTemplateMutation,
   useUpdateRatesMutation,
   useUpdateMoneySettingsMutation,
+  useUpdateOccupancySettingsMutation,
 } from './services/api'
 import CheckInDialog from './CheckInDialog'
 import ReservationCreateDialog from './ReservationCreateDialog'
@@ -79,6 +94,8 @@ import WorkspaceNavigation from './WorkspaceNavigation'
 import WorkspaceUserMenu from './WorkspaceUserMenu'
 import {
   navigateWorkspace,
+  settingsTabHref,
+  useSettingsTab,
   useWorkspaceSection,
   workspaceHref,
 } from './app/workspaceLocation'
@@ -269,23 +286,17 @@ export default function CampingWorkspace({
                 <Box sx={uiStyles.shrinkable}>
                   <PendingBalanceCard
                     pendingAmountMinor={profile.pendingAmountMinor}
+                    pendingBalances={profile.pendingBalances}
                     currency={profile.currency}
                   />
                 </Box>
               </Box>
-              <Box sx={uiStyles.topGap}>
+              <Box sx={uiStyles.sectionTopGap}>
                 <DashboardToday
                   profile={profile}
                   onSelect={setSelection}
                   refreshKey={todayRefreshKey}
                 />
-                <Button
-                  href={workspaceHref('stays')}
-                  onClick={navigateWorkspace}
-                  sx={uiStyles.topGap}
-                >
-                  {t('navigation.allStays')}
-                </Button>
               </Box>
             </>
           ) : (
@@ -293,20 +304,10 @@ export default function CampingWorkspace({
           ))}
         {section === 'reservations' &&
           (profile ? (
-            <Stack {...uiProps.stackStandard}>
-              <Box>
-                <Typography component="h2" variant="h6">
-                  {t('calendar.title')}
-                </Typography>
-                <Typography color="text.secondary">
-                  {t('navigation.reservationsHelp')}
-                </Typography>
-              </Box>
-              <AvailabilityCalendar
-                profile={profile}
-                refreshKey={todayRefreshKey}
-              />
-            </Stack>
+            <AvailabilityCalendar
+              profile={profile}
+              refreshKey={todayRefreshKey}
+            />
           ) : (
             <LoadingPanel />
           ))}
@@ -317,31 +318,22 @@ export default function CampingWorkspace({
             <LoadingPanel />
           )
         ) : section === 'stays' ? (
-          <Stack
-            component={Paper}
-            variant="outlined"
-            {...uiProps.stackStandard}
-            sx={uiStyles.staysFilters}
-          >
-            <Stack
-              {...uiProps.rowSmall}
-
-              sx={uiStyles.rowBetween}
-            >
-              <Tabs
+          <TabbedSection
+            tabs={
+              <SectionTabs
                 value={stayStatus}
                 onChange={(_, value: 'active' | 'closed') => {
                   setStayStatus(value)
                   scrollWorkspaceToTop()
                 }}
-                variant="scrollable"
-                scrollButtons={false}
-                sx={uiStyles.campingWorkspaceTabs}
                 aria-label={t('navigation.stayViews')}
               >
                 <Tab value="active" label={t('navigation.inProgress')} />
                 <Tab value="closed" label={t('home.closedStays')} />
-              </Tabs>
+              </SectionTabs>
+            }
+          >
+            <SectionCard>
               <AccommodationFilter
                 value={accommodation}
                 onChange={(value) => {
@@ -349,75 +341,75 @@ export default function CampingWorkspace({
                   scrollWorkspaceToTop()
                 }}
               />
-            </Stack>
-            {stays.isError && (
-              <Alert severity="error">
-                {t('home.loadError')}{' '}
-                <Button
-                  onClick={() =>
-                    void (stays.currentData && stays.hasNextPage
-                      ? stays.fetchNextPage()
-                      : stays.refetch())
-                  }
+              {stays.isError && (
+                <Alert severity="error">
+                  {t('home.loadError')}{' '}
+                  <Button
+                    onClick={() =>
+                      void (stays.currentData && stays.hasNextPage
+                        ? stays.fetchNextPage()
+                        : stays.refetch())
+                    }
+                  >
+                    {t('common.retry')}
+                  </Button>
+                </Alert>
+              )}
+              {stays.currentData && profile && (
+                <EnrichedStayList
+                  items={stays.currentData.pages.flatMap((page) => page.items)}
+                  timezone={profile.timezone}
+                  onSelect={setSelection}
+                />
+              )}
+              {stays.isFetching && (
+                <Stack
+                  role="status"
+                  aria-label={t('home.loading')}
+                  {...uiProps.stackStandard}
                 >
-                  {t('common.retry')}
-                </Button>
-              </Alert>
-            )}
-            {stays.currentData && profile && (
-              <EnrichedStayList
-                items={stays.currentData.pages.flatMap((page) => page.items)}
-                timezone={profile.timezone}
-                onSelect={setSelection}
+                  {Array.from(
+                    { length: stays.currentData ? 2 : 4 },
+                    (_, index) => (
+                      <Stack
+                        key={index}
+                        {...uiProps.rowStandard}
+
+                        sx={uiStyles.campingWorkspaceStack3}
+                      >
+                        <Box sx={uiStyles.campingWorkspaceBox6}>
+                          <Skeleton
+                            variant="text"
+                            {...uiProps.guestNamePlaceholder}
+                          />
+                          <Skeleton
+                            variant="text"
+                            {...uiProps.guestDetailsPlaceholder}
+                          />
+                        </Box>
+                        <Skeleton
+                          variant="text"
+                          {...uiProps.amountPlaceholder}
+
+                          sx={uiStyles.desktopBlock}
+                        />
+                        <Skeleton
+                          variant="rounded"
+                          {...uiProps.actionPlaceholder}
+                        />
+                      </Stack>
+                    ),
+                  )}
+                </Stack>
+              )}
+              <InfiniteStayLoader
+                hasMore={Boolean(stays.hasNextPage)}
+                loading={stays.isFetching}
+                failed={stays.isError}
+                onLoad={() => void stays.fetchNextPage()}
               />
-            )}
-            {stays.isFetching && (
-              <Stack
-                role="status"
-                aria-label={t('home.loading')}
-                {...uiProps.stackStandard}
-              >
-                {Array.from(
-                  { length: stays.currentData ? 2 : 4 },
-                  (_, index) => (
-                    <Stack
-                      key={index}
-                      {...uiProps.rowStandard}
-
-                      sx={uiStyles.campingWorkspaceStack3}
-                    >
-                      <Box sx={uiStyles.campingWorkspaceBox6}>
-                        <Skeleton
-                          variant="text"
-                          {...uiProps.guestNamePlaceholder}
-                        />
-                        <Skeleton
-                          variant="text"
-                          {...uiProps.guestDetailsPlaceholder}
-                        />
-                      </Box>
-                      <Skeleton
-                        variant="text"
-                        {...uiProps.amountPlaceholder}
-
-                        sx={uiStyles.desktopBlock}
-                      />
-                      <Skeleton
-                        variant="rounded"
-                        {...uiProps.actionPlaceholder}
-                      />
-                    </Stack>
-                  ),
-                )}
-              </Stack>
-            )}
-            <InfiniteStayLoader
-              hasMore={Boolean(stays.hasNextPage)}
-              loading={stays.isFetching}
-              failed={stays.isError}
-              onLoad={() => void stays.fetchNextPage()}
-            />
-          </Stack>
+            </SectionCard>
+          </TabbedSection>
         ) : null}
       </WorkspaceLayout>
       {(section === 'home' ||
@@ -1396,35 +1388,47 @@ function ExtraRow({
 
 function SettingsPanel({ profile }: { profile: CampingProfile }) {
   const { t, i18n } = useTranslation()
+  const tab = useSettingsTab()
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const [createExtraOpen, setCreateExtraOpen] = useState(false)
+  const createExtraButton = useRef<HTMLButtonElement>(null)
+  const [inlineCategory, setInlineCategory] = useState<string | null>(null)
   const templates = useExtraTemplatesQuery()
-  const [create, createState] = useCreateExtraTemplateMutation()
   const [update] = useUpdateExtraTemplateMutation()
   const [updateRates, ratesState] = useUpdateRatesMutation()
-  const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('')
-  const [unitPriceMinor, setUnitPriceMinor] = useState(0)
   const [rates, setRates] = useState(profile.rates)
   const [editingRate, setEditingRate] = useState<
     keyof typeof profile.rates | null
   >(null)
   const [moneyDecimals, setMoneyDecimals] = useState(profile.moneyDecimals)
   const [updateMoneySettings, moneyState] = useUpdateMoneySettingsMutation()
-  const [error, setError] = useState('')
-  const saveTemplate = async () => {
-    if (!description.trim()) return
-    try {
-      await create({
-        category,
-        description: description.trim(),
-        unitPriceMinor,
-      }).unwrap()
-      setDescription('')
-      setCategory('')
-      setUnitPriceMinor(0)
-    } catch {
-      setError(t('settings.saveError'))
-    }
+  const [updateOccupancy, occupancyState] = useUpdateOccupancySettingsMutation()
+  const [updateAges, ageState] = useUpdateOccupancySettingsMutation()
+  const [expectedAgeRanges, setExpectedAgeRanges] = useState<
+    CampingProfile['ageRanges'] | null
+  >(null)
+  const [ageDraft, setAgeDraft] = useState<{
+    infants: string
+    children: string
+  } | null>(null)
+  const ageLimits = ageDraft ?? {
+    infants: String(profile.ageRanges.infants.max),
+    children: String(profile.ageRanges.children.max),
   }
+  const infantMax =
+    ageLimits.infants.trim() === '' ? NaN : Number(ageLimits.infants)
+  const childMax =
+    ageLimits.children.trim() === '' ? NaN : Number(ageLimits.children)
+  const ages = ageRangesSchema.safeParse({
+    infants: { min: 0, max: infantMax },
+    children: { min: infantMax + 1, max: childMax },
+    adults: { min: childMax + 1, max: null },
+  })
+  const ageConflict = errorStatus(ageState.error) === '409'
+  const agesChanged =
+    infantMax !== profile.ageRanges.infants.max ||
+    childMax !== profile.ageRanges.children.max
+  const [error, setError] = useState('')
   const saveRates = async () => {
     try {
       setError('')
@@ -1445,215 +1449,462 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
     a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, i18n.language),
   )
   return (
-    <Stack {...uiProps.stackSection} sx={uiStyles.settingsPanelStack}>
-      <PricingSettings profile={profile} />
-      <Paper variant="outlined" sx={uiStyles.panelPadding}>
-        <Typography variant="h6">{t('settings.money')}</Typography>
-        <Typography color="text.secondary">
-          {t('settings.moneyHelp')}
-        </Typography>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={moneyDecimals === null}
-              onChange={(_, checked) => setMoneyDecimals(checked ? null : 0)}
-            />
-          }
-          label={t('settings.useCents')}
-        />
-        <Box>
-          <Button
-            disabled={
-              moneyState.isLoading || moneyDecimals === profile.moneyDecimals
-            }
-            onClick={async () => {
-              try {
-                await updateMoneySettings({ moneyDecimals }).unwrap()
-              } catch {
-                setError(t('settings.saveError'))
-              }
-            }}
-          >
-            {t('common.save')}
-          </Button>
-        </Box>
-      </Paper>
+    <TabbedSection
+      tabs={
+        <SectionTabs value={tab} aria-label={t('settings.title')}>
+          <Tab
+            value="general"
+            href={settingsTabHref('general')}
+            onClick={navigateWorkspace}
+            label={t('settings.generalTab')}
+            id="settings-general-tab"
+            aria-controls="settings-general-panel"
+          />
+          <Tab
+            value="accommodations"
+            href={settingsTabHref('accommodations')}
+            onClick={navigateWorkspace}
+            label={t('settings.accommodationsTab')}
+            id="settings-accommodations-tab"
+            aria-controls="settings-accommodations-panel"
+          />
+          <Tab
+            value="extras"
+            href={settingsTabHref('extras')}
+            onClick={navigateWorkspace}
+            label={t('settings.templates')}
+            id="settings-extras-tab"
+            aria-controls="settings-extras-panel"
+          />
+        </SectionTabs>
+      }
+    >
       {error && <Alert severity="error">{error}</Alert>}
-      <Paper variant="outlined" sx={uiStyles.panelPadding}>
-        <Typography variant="h6">{t('settings.rates')}</Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={uiStyles.bottomGap}
-        >
-          {t('settings.ratesHelp')}
-        </Typography>
-        <Stack {...uiProps.stackStandard}>
-          {(['adults', 'children', 'infants'] as const).map((category) => (
-            <Stack
-              key={category}
-              {...uiProps.responsiveRow}
-
-              sx={uiStyles.tabletAlignCenter}
-            >
-              <Typography sx={uiStyles.flexGrow}>
-                {t(`checkIn.${category}`)} (
-                {ageLabel(profile.ageRanges[category])})
+      <Box
+        role="tabpanel"
+        id="settings-accommodations-panel"
+        aria-labelledby="settings-accommodations-tab"
+        hidden={tab !== 'accommodations'}
+      >
+        <PricingSettings profile={profile} />
+      </Box>
+      <Box
+        role="tabpanel"
+        id="settings-general-panel"
+        aria-labelledby="settings-general-tab"
+        hidden={tab !== 'general'}
+      >
+        <Stack {...uiProps.stackSection}>
+          <CampingProfileSettings profile={profile} />
+          <SectionCard
+            title={t('settings.money')}
+            subtitle={t('settings.moneyHelp')}
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={moneyDecimals === null}
+                  onChange={(_, checked) =>
+                    setMoneyDecimals(checked ? null : 0)
+                  }
+                />
+              }
+              label={t('settings.useCents')}
+            />
+            <Box>
+              <Button
+                disabled={
+                  moneyState.isLoading ||
+                  moneyDecimals === profile.moneyDecimals
+                }
+                onClick={async () => {
+                  try {
+                    await updateMoneySettings({ moneyDecimals }).unwrap()
+                  } catch {
+                    setError(t('settings.saveError'))
+                  }
+                }}
+              >
+                {t('common.save')}
+              </Button>
+            </Box>
+          </SectionCard>
+          <SectionCard
+            title={t('settings.guestAges')}
+            subtitle={t('settings.guestAgesHelp')}
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={profile.infantsConsumeCapacity ?? false}
+                  disabled={occupancyState.isLoading}
+                  onChange={(_, checked) => {
+                    void updateOccupancy({ infantsConsumeCapacity: checked })
+                  }}
+                />
+              }
+              label={t('settings.infantsCapacity')}
+            />
+            <Box sx={uiStyles.formGrid}>
+              {(['infants', 'children'] as const).map((category) => (
+                <TextField
+                  key={category}
+                  type="number"
+                  label={t(`settings.maxAge.${category}`)}
+                  value={ageLimits[category]}
+                  disabled={ageState.isLoading}
+                  onChange={(event) => {
+                    if (!ageDraft) setExpectedAgeRanges(profile.ageRanges)
+                    setAgeDraft({
+                      ...ageLimits,
+                      [category]: event.target.value,
+                    })
+                  }}
+                />
+              ))}
+            </Box>
+            {ages.success ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('settings.adultAge', { age: ages.data.adults.min })}
               </Typography>
-              {editingRate === category ? (
+            ) : (
+              <Typography variant="body2" color="error">
+                {t('settings.invalidAges')}
+              </Typography>
+            )}
+            {occupancyState.isError && (
+              <Alert severity="error">{t('settings.saveError')}</Alert>
+            )}
+            {ageState.isError && (
+              <Alert severity="error">
+                {ageConflict
+                  ? t('settings.staleAges', {
+                      infants: String(profile.ageRanges.infants.max),
+                      children: String(profile.ageRanges.children.max),
+                    })
+                  : t('settings.saveError')}
+              </Alert>
+            )}
+            <Box>
+              <Button
+                disabled={ageState.isLoading || !agesChanged || !ages.success}
+                onClick={async () => {
+                  if (!ages.success) return
+                  const result = await updateAges({
+                    ageRanges: ages.data,
+                    expectedAgeRanges: ageConflict
+                      ? profile.ageRanges
+                      : (expectedAgeRanges ?? profile.ageRanges),
+                  })
+                  if (result.data) {
+                    setAgeDraft(null)
+                    setExpectedAgeRanges(null)
+                  }
+                }}
+              >
+                {t('common.save')}
+              </Button>
+            </Box>
+          </SectionCard>
+          <SectionCard
+            title={t('settings.rates')}
+            subtitle={t('settings.ratesHelp')}
+          >
+            <Stack {...uiProps.stackStandard}>
+              {(['adults', 'children', 'infants'] as const).map((category) => (
                 <Stack
-                  {...uiProps.responsiveRowSmall}
+                  key={category}
+                  {...uiProps.responsiveRow}
 
                   sx={uiStyles.tabletAlignCenter}
                 >
-                  <MoneyField
-                    autoFocus
-                    size="small"
-                    label={`${t('stay.unitPrice')} (${profile.currency})`}
-                    helperText=""
-                    currency={profile.currency}
-                    moneyDecimals={profile.moneyDecimals}
-                    valueMinor={rates[category]}
-                    disabled={ratesState.isLoading}
-                    onChangeMinor={(value) =>
-                      setRates({
-                        ...rates,
-                        [category]: value === '' ? NaN : value,
-                      })
-                    }
-                  />
-                  <Stack {...uiProps.rowSmall}>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={() => void saveRates()}
-                      disabled={
-                        ratesState.isLoading ||
-                        !Number.isSafeInteger(rates[category]) ||
-                        rates[category] < 0
-                      }
-                    >
-                      {t('common.save')}
-                    </Button>
-                    <Button
-                      variant="text"
-                      color="error"
-                      sx={uiStyles.campingWorkspaceButton2}
-                      disabled={ratesState.isLoading}
-                      onClick={() => {
-                        setEditingRate(null)
-                        setError('')
-                      }}
-                    >
-                      {t('common.cancel')}
-                    </Button>
-                  </Stack>
-                </Stack>
-              ) : (
-                <Stack
-                  {...uiProps.rowStandard}
-
-                  sx={uiStyles.alignCenter}
-                >
-                  <Typography>
-                    {formatMoney(
-                      profile.rates[category],
-                      profile.currency,
-                      i18n.language,
-                    )}
+                  <Typography sx={uiStyles.flexGrow}>
+                    {t(`checkIn.${category}`)} (
+                    {ageLabel(profile.ageRanges[category])})
                   </Typography>
-                  <Tooltip title={t('settings.editRate')}>
-                    <span>
-                      <IconButton
+                  {editingRate === category ? (
+                    <Stack
+                      {...uiProps.responsiveRowSmall}
+
+                      sx={uiStyles.tabletAlignCenter}
+                    >
+                      <MoneyField
+                        autoFocus
                         size="small"
-                        color="primary"
-                        aria-label={t('settings.editRate')}
-                        disabled={editingRate !== null || ratesState.isLoading}
-                        onClick={() => {
-                          setRates(profile.rates)
-                          setError('')
-                          setEditingRate(category)
-                        }}
-                      >
-                        <LucideIcon icon={Pencil} fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
+                        label={`${t('stay.unitPrice')} (${profile.currency})`}
+                        helperText=""
+                        currency={profile.currency}
+                        moneyDecimals={profile.moneyDecimals}
+                        valueMinor={rates[category]}
+                        disabled={ratesState.isLoading}
+                        onChangeMinor={(value) =>
+                          setRates({
+                            ...rates,
+                            [category]: value === '' ? NaN : value,
+                          })
+                        }
+                      />
+                      <Stack {...uiProps.rowSmall}>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => void saveRates()}
+                          disabled={
+                            ratesState.isLoading ||
+                            !Number.isSafeInteger(rates[category]) ||
+                            rates[category] < 0
+                          }
+                        >
+                          {t('common.save')}
+                        </Button>
+                        <Button
+                          variant="text"
+                          color="error"
+                          sx={uiStyles.campingWorkspaceButton2}
+                          disabled={ratesState.isLoading}
+                          onClick={() => {
+                            setEditingRate(null)
+                            setError('')
+                          }}
+                        >
+                          {t('common.cancel')}
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  ) : (
+                    <Stack
+                      {...uiProps.rowStandard}
+
+                      sx={uiStyles.alignCenter}
+                    >
+                      <Typography>
+                        {formatMoney(
+                          profile.rates[category],
+                          profile.currency,
+                          i18n.language,
+                        )}
+                      </Typography>
+                      <Tooltip title={t('settings.editRate')}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            aria-label={t('settings.editRate')}
+                            disabled={
+                              editingRate !== null || ratesState.isLoading
+                            }
+                            onClick={() => {
+                              setRates(profile.rates)
+                              setError('')
+                              setEditingRate(category)
+                            }}
+                          >
+                            <LucideIcon icon={Pencil} fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Stack>
+                  )}
                 </Stack>
-              )}
+              ))}
             </Stack>
-          ))}
+          </SectionCard>
         </Stack>
-      </Paper>
-      <Paper variant="outlined" sx={uiStyles.panelPadding}>
-        <Typography variant="h6">{t('settings.templates')}</Typography>
-        <Stack
-          {...uiProps.stackSection}
-          divider={<Divider />}
-          sx={uiStyles.topGap}
-        >
+      </Box>
+      <Box
+        role="tabpanel"
+        id="settings-extras-panel"
+        aria-labelledby="settings-extras-tab"
+        hidden={tab !== 'extras'}
+      >
+        <Stack {...uiProps.stackStandard}>
+          {createExtraOpen ? (
+            <CreateExtraForm
+              profile={profile}
+              categories={categories}
+              onClose={() => {
+                setCreateExtraOpen(false)
+                requestAnimationFrame(() => createExtraButton.current?.focus())
+              }}
+            />
+          ) : (
+            <Stack {...uiProps.row} sx={uiStyles.trailingActions}>
+              <Button
+                ref={createExtraButton}
+                size="small"
+                variant="outlined"
+                startIcon={<LucideIcon icon={Plus} />}
+                onClick={() => setCreateExtraOpen(true)}
+              >
+                {t('settings.createTemplate')}
+              </Button>
+            </Stack>
+          )}
           {templates.isError && (
             <Alert severity="error">{t('settings.loadError')}</Alert>
           )}
-          {categories.map((category) => (
-            <Stack key={category} {...uiProps.stackStandard}>
-              <Typography
-                component="h3"
-                variant="subtitle1"
-                sx={uiStyles.boldText}
-              >
-                {category || t('settings.uncategorized')}
-              </Typography>
-              {extrasByCategory.get(category)?.map((template) => (
-                <TemplateRow
-                  key={template.id}
-                  template={template}
-                  currency={profile.currency}
-                  moneyDecimals={profile.moneyDecimals}
-                  onSave={update}
-                />
-              ))}
-            </Stack>
-          ))}
+          <Box>
+            {categories.map((category, index) => {
+              const items = extrasByCategory.get(category) ?? []
+              return (
+                <Accordion
+                  key={category}
+                  disableGutters
+                  expanded={expandedCategory === category}
+                  onChange={(_, expanded) =>
+                    setExpandedCategory(expanded ? category : null)
+                  }
+                >
+                  <AccordionSummary
+                    expandIcon={<LucideIcon icon={ChevronDown} />}
+                    id={`settings-extra-category-${index}`}
+                    aria-controls={`settings-extra-items-${index}`}
+                  >
+                    <Typography component="span" variant="h3">
+                      {category || t('settings.uncategorized')} ({items.length})
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Stack {...uiProps.stackSmall}>
+                      {items.map((template) => (
+                        <TemplateRow
+                          key={template.id}
+                          template={template}
+                          currency={profile.currency}
+                          moneyDecimals={profile.moneyDecimals}
+                          onSave={update}
+                        />
+                      ))}
+                      {inlineCategory === category ? (
+                        <CreateExtraForm
+                          profile={profile}
+                          categories={categories}
+                          fixedCategory={category}
+                          onClose={() =>
+                            setInlineCategory((current) =>
+                              current === category ? null : current,
+                            )
+                          }
+                        />
+                      ) : (
+                        <Box>
+                          <Button
+                            variant="text"
+                            color="primary"
+                            size="small"
+                            sx={uiStyles.inlineActionLink}
+                            onClick={() => setInlineCategory(category)}
+                          >
+                            + {t('settings.createTemplate')}
+                          </Button>
+                        </Box>
+                      )}
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+              )
+            })}
+          </Box>
         </Stack>
-        <Divider sx={uiStyles.settingsPanelDivider} />
-        <Box sx={uiStyles.formGrid}>
-          <TextField
-            label={t('stay.category')}
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          />
-          <TextField
-            label={t('stay.description')}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          <MoneyField
-            label={t('stay.unitPrice')}
-            currency={profile.currency}
-            moneyDecimals={profile.moneyDecimals}
-            valueMinor={unitPriceMinor}
-            onChangeMinor={(value) =>
-              setUnitPriceMinor(value === '' ? NaN : value)
-            }
-          />
-          <Button
-            variant="outlined"
-            onClick={() => void saveTemplate()}
-            disabled={
-              createState.isLoading ||
-              !description.trim() ||
-              !Number.isSafeInteger(unitPriceMinor) ||
-              unitPriceMinor < 0
-            }
-          >
-            {t('settings.createTemplate')}
-          </Button>
-        </Box>
-      </Paper>
-    </Stack>
+      </Box>
+    </TabbedSection>
   )
 }
+function CreateExtraForm({
+  profile,
+  categories,
+  fixedCategory,
+  onClose,
+}: {
+  profile: CampingProfile
+  categories: string[]
+  fixedCategory?: string
+  onClose?: () => void
+}) {
+  const { t } = useTranslation()
+  const [create, createState] = useCreateExtraTemplateMutation()
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('')
+  const [unitPriceMinor, setUnitPriceMinor] = useState(0)
+  const [error, setError] = useState(false)
+  const saveTemplate = async () => {
+    if (!description.trim()) return
+    setError(false)
+    try {
+      await create({
+        category: fixedCategory ?? category.trim(),
+        description: description.trim(),
+        unitPriceMinor,
+      }).unwrap()
+      setDescription('')
+      setCategory('')
+      setUnitPriceMinor(0)
+      onClose?.()
+    } catch {
+      setError(true)
+    }
+  }
+  return (
+    <Box sx={uiStyles.formGrid}>
+      {fixedCategory === undefined && (
+        <Autocomplete
+          freeSolo
+          forcePopupIcon
+          openOnFocus
+          options={categories.filter(Boolean)}
+          value={null}
+          inputValue={category}
+          onInputChange={(_, value, reason) => {
+            if (reason === 'input' || reason === 'clear') setCategory(value)
+          }}
+          onChange={(_, value) => setCategory(value ?? '')}
+          clearText={t('common.clear')}
+          openText={t('common.open')}
+          closeText={t('common.close')}
+          renderInput={(params) => (
+            <TextField {...params} label={t('stay.category')} />
+          )}
+        />
+      )}
+      <TextField
+        autoFocus
+        label={t('stay.description')}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <MoneyField
+        label={t('stay.unitPrice')}
+        currency={profile.currency}
+        moneyDecimals={profile.moneyDecimals}
+        valueMinor={unitPriceMinor}
+        showCurrencyInInput
+        onChangeMinor={(value) => setUnitPriceMinor(value === '' ? NaN : value)}
+      />
+      <Stack {...uiProps.rowSmall} sx={uiStyles.trailingActions}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => void saveTemplate()}
+          disabled={
+            createState.isLoading ||
+            !description.trim() ||
+            !Number.isSafeInteger(unitPriceMinor) ||
+            unitPriceMinor < 0
+          }
+        >
+          {t('common.save')}
+        </Button>
+        {onClose && (
+          <Button onClick={onClose} disabled={createState.isLoading}>
+            {t('common.cancel')}
+          </Button>
+        )}
+      </Stack>
+      {error && <Alert severity="error">{t('settings.saveError')}</Alert>}
+    </Box>
+  )
+}
+
 function TemplateRow({
   template,
   currency,

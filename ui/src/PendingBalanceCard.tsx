@@ -1,52 +1,50 @@
-import { uiProps, uiStyles } from './app/theme'
+import type { CampingProfile } from '@camping/contracts'
+import SectionCard from './components/SectionCard'
+import { uiStyles } from './app/theme'
 import { useTranslation } from 'react-i18next'
-import { Box, Paper, Stack, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { PiggyBank } from 'lucide-react'
 import LucideIcon from './components/LucideIcon'
 import { formatMoney } from './services/money'
 
-type PendingBalanceCardProps = { pendingAmountMinor: number; currency: string }
+type PendingBalanceCardProps = Pick<
+  CampingProfile,
+  'pendingAmountMinor' | 'pendingBalances' | 'currency'
+>
 
 export default function PendingBalanceCard({
   pendingAmountMinor,
+  pendingBalances,
   currency,
 }: PendingBalanceCardProps) {
   const { t, i18n } = useTranslation()
+  const balances = pendingBalances?.length
+    ? pendingBalances
+    : [{ currency, amountMinor: pendingAmountMinor }]
   return (
-    <Paper
-      component="section"
-      aria-labelledby="balance-title"
-      variant="outlined"
-      sx={uiStyles.pendingBalanceCardPaper}
-    >
-      <Stack {...uiProps.stackStandard}>
-        <Stack
-          {...uiProps.rowSmall}
-
-          sx={uiStyles.alignCenter}
-        >
+    <SectionCard
+      titleId="balance-title"
+      height="100%"
+      title={
+        <>
           <LucideIcon
             icon={PiggyBank}
             sx={uiStyles.goldIcon}
             aria-hidden="true"
-          />
+          />{' '}
+          {t('home.pendingBalance')}
+        </>
+      }
+    >
+      <Box>
+        {balances.map(({ currency, amountMinor }) => (
           <Typography
-            id="balance-title"
-            component="h2"
-            variant="subtitle1"
-            color="text.primary"
-            sx={uiStyles.boldText}
-          >
-            {t('home.pendingBalance')}
-          </Typography>
-        </Stack>
-        <Box>
-          <Typography
+            key={currency}
             component="p"
             variant="metricLarge"
             sx={uiStyles.pageTitle}
           >
-            {formatMoney(pendingAmountMinor, currency, i18n.language, {
+            {formatMoney(amountMinor, currency, i18n.language, {
               hideCurrency: true,
             })}{' '}
             <Typography
@@ -58,11 +56,11 @@ export default function PendingBalanceCard({
               {currency}
             </Typography>
           </Typography>
-          <Typography color="text.secondary">
-            {t('home.accumulatedBalance')}
-          </Typography>
-        </Box>
-      </Stack>
-    </Paper>
+        ))}
+        <Typography color="text.secondary">
+          {t('home.accumulatedBalance')}
+        </Typography>
+      </Box>
+    </SectionCard>
   )
 }

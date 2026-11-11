@@ -30,7 +30,7 @@ it('children overflow is a warning without an acceptance checkbox', () => {
       }}
     />,
   )
-  expect(html).toContain('Podés crear la reserva igualmente')
+  expect(html).toContain('Puedes crear la reserva igualmente')
   expect(html).not.toContain('type="checkbox"')
 })
 it('shared dormitories show available beds and requested quantity', () => {

@@ -3,6 +3,8 @@ import { afterEach, expect, it, vi } from 'vitest'
 import {
   migrateWorkspaceHash,
   navigateWorkspace,
+  settingsTabFromPath,
+  settingsTabHref,
   workspaceHref,
   workspaceSectionFromPath,
 } from './workspaceLocation'
@@ -15,11 +17,25 @@ it.each([
   ['/estadias/', 'stays'],
   ['/reservas', 'reservations'],
   ['/configuracion', 'settings'],
+  ['/configuracion/alojamientos', 'settings'],
+  ['/configuracion/general', 'settings'],
+  ['/configuracion/extras/', 'settings'],
   ['/mas', 'settings'],
   ['/', 'home'],
 ] as const)('resolves direct route %s', (path, section) => {
   expect(workspaceSectionFromPath(path)).toBe(section)
   expect(workspaceHref(section)).not.toContain('#')
+})
+
+it.each(['accommodations', 'general', 'extras'] as const)(
+  'resolves the settings tab %s from its URL',
+  (tab) => {
+    expect(settingsTabFromPath(`${settingsTabHref(tab)}/`)).toBe(tab)
+  },
+)
+
+it.each(['/configuracion', '/mas'])('opens the default tab at %s', (path) => {
+  expect(settingsTabFromPath(path)).toBe('accommodations')
 })
 
 it('migrates bookmarked hash URLs without adding a history entry or losing query/state', () => {
