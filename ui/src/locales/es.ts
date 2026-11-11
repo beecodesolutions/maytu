@@ -270,18 +270,21 @@ const es = {
     generalTab: 'General',
     campingProfile: 'Datos del camping',
     campingName: 'Nombre del camping',
+    country: 'País',
     timezone: 'Zona horaria',
-    timezoneExample: 'Por ejemplo, America/Managua.',
-    invalidTimezone:
-      'Introduce una zona horaria válida, por ejemplo, America/Managua.',
     currency: 'Moneda',
-    fixedCurrency:
-      'La moneda se conserva para mantener los importes registrados.',
-    confirmTimezone: 'Cambiar zona horaria',
-    timezoneImpact:
-      'Maytu usará {{timezone}} para determinar el día local y validar nuevas operaciones. Las fechas y los importes guardados se conservan.',
+    suggestedTimezone: 'Zona sugerida: {{timezone}}',
+    suggestedTimezones: 'Las zonas del país aparecen primero.',
+    suggestedCurrency: 'Según el país: {{currency}}',
+    regionalSettingsImpact: 'Estos cambios se aplicarán a nuevas estadías.',
     activeStayTimezone:
       'Cierra las estadías activas antes de cambiar la zona horaria.',
+    activeStayCurrency:
+      'Cierra las estadías activas antes de cambiar la moneda.',
+    openReservationsCurrency:
+      'Finaliza las reservas abiertas antes de cambiar la moneda.',
+    currencyPrecision:
+      'Selecciona una moneda con la misma cantidad de decimales para conservar las tarifas configuradas.',
     staleProfile:
       'La configuración cambió mientras editabas. Revisa los datos actuales ({{name}} · {{timezone}}) antes de guardar de nuevo.',
     profilePermission: 'Tu sesión no tiene acceso para guardar estos cambios.',

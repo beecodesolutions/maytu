@@ -286,6 +286,7 @@ export default function CampingWorkspace({
                 <Box sx={uiStyles.shrinkable}>
                   <PendingBalanceCard
                     pendingAmountMinor={profile.pendingAmountMinor}
+                    pendingBalances={profile.pendingBalances}
                     currency={profile.currency}
                   />
                 </Box>

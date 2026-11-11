@@ -167,7 +167,7 @@ async function main(): Promise<void> {
         `GRANT SELECT ON TABLE ${schemaIdentifier}.campings TO ${roleIdentifier}`,
       )
       await manager.query(
-        `GRANT UPDATE (name, timezone, rates, money_decimals, infants_consume_capacity, age_ranges, updated_at) ON TABLE ${schemaIdentifier}.campings TO ${roleIdentifier}`,
+        `GRANT UPDATE (name, country, currency, timezone, rates, money_decimals, infants_consume_capacity, age_ranges, updated_at) ON TABLE ${schemaIdentifier}.campings TO ${roleIdentifier}`,
       )
       await manager.query(
         `GRANT SELECT ON TABLE ${schemaIdentifier}.users TO ${roleIdentifier}`,

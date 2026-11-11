@@ -9,6 +9,12 @@ import {
   safeCount,
 } from './contract-primitives'
 import { moneyDecimalsSchema } from './money'
+import { campingCurrencies } from './camping-location-data'
+export {
+  campingCurrencies,
+  currenciesByCountry,
+  timezonesByCountry,
+} from './camping-location-data'
 export * from './money'
 import { reservationPriceSnapshotSchema } from './reservation-pricing'
 export {
@@ -95,6 +101,14 @@ export const campingProfileSchema = z.object({
   activePeople: safeCount,
   activeVehicles: safeCount,
   pendingAmountMinor: moneySchema,
+  pendingBalances: z
+    .array(
+      z.object({
+        currency: z.string().regex(/^[A-Z]{3}$/),
+        amountMinor: moneySchema,
+      }),
+    )
+    .optional(),
 })
 export type CampingProfile = z.infer<typeof campingProfileSchema>
 
@@ -116,9 +130,30 @@ const campingProfileFieldsSchema = z.strictObject({
     }, 'Introduce una zona horaria válida.'),
 })
 
-export const campingProfileUpdateSchema = campingProfileFieldsSchema.extend({
-  expected: campingProfileSchema.pick({ name: true, timezone: true }).strict(),
-})
+export const campingProfileUpdateSchema = campingProfileFieldsSchema
+  .extend({
+    country: campingProfileSchema.shape.country.optional(),
+    currency: campingProfileSchema.shape.currency.optional(),
+    expected: campingProfileSchema
+      .pick({ name: true, timezone: true, country: true, currency: true })
+      .partial({ country: true, currency: true })
+      .strict(),
+  })
+  .refine(
+    (profile) =>
+      (profile.country === undefined ||
+        profile.expected.country !== undefined) &&
+      (profile.currency === undefined ||
+        profile.expected.currency !== undefined),
+    'Indica los valores anteriores de los campos que deseas cambiar.',
+  )
+  .refine(
+    ({ currency, expected }) =>
+      currency === undefined ||
+      currency === expected.currency ||
+      campingCurrencies.includes(currency),
+    { path: ['currency'], error: 'Selecciona una moneda válida.' },
+  )
 export type CampingProfileUpdate = z.input<typeof campingProfileUpdateSchema>
 export const sessionUserSchema = z.object({
   id: z.string(),

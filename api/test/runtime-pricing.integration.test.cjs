@@ -193,7 +193,37 @@ test('restricted runtime supports pricing settings, allocation, edits and cancel
     }),
     { status: 400 },
   )
-  await campingService.updateProfile(context, { ...expected, expected: next })
+  const regionalBefore = {
+    ...next,
+    country: updated.country,
+    currency: updated.currency,
+  }
+  const regionalAfter = { ...regionalBefore, country: 'NI', currency: 'USD' }
+  const regionalProfile = await campingService.updateProfile(context, {
+    ...regionalAfter,
+    expected: regionalBefore,
+  })
+  assert.equal(regionalProfile.country, 'NI')
+  assert.equal(regionalProfile.currency, 'USD')
+  await assert.rejects(
+    campingService.updateProfile(context, {
+      ...regionalAfter,
+      country: 'CR',
+      expected: regionalBefore,
+    }),
+    {
+      response: {
+        code: 'STALE_CAMPING_PROFILE',
+        message: 'La configuración cambió. Revisa los datos actuales.',
+      },
+    },
+  )
+  await campingService.updateProfile(context, {
+    ...expected,
+    country: regionalBefore.country,
+    currency: regionalBefore.currency,
+    expected: regionalAfter,
+  })
   await campingService.updateOccupancySettings(context, {
     infantsConsumeCapacity: false,
   })

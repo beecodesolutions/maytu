@@ -29,7 +29,7 @@ export class CampingController {
   @Patch()
   @ApiEndpoint({
     operationId: 'campingUpdateProfile',
-    summary: 'Actualizar el nombre y la zona horaria del camping',
+    summary: 'Actualizar el nombre, país, zona horaria y moneda del camping',
     status: 200,
     body: openApiRef('CampingProfileUpdate'),
     response: openApiRef('CampingProfile'),

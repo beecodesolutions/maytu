@@ -12,11 +12,12 @@ type CountrySelectProps = {
   label: string
   value: CountryCode | ''
   onChange: (country: CountryCode | '') => void
-  onBlur: () => void
-  inputRef: Ref<HTMLInputElement>
+  onBlur?: () => void
+  inputRef?: Ref<HTMLInputElement>
   disabled: boolean
   error?: string
   callingCode?: boolean
+  required?: boolean
 }
 
 function flag(country: CountryCode) {
@@ -34,6 +35,7 @@ export default function CountrySelect({
   disabled,
   error,
   callingCode = false,
+  required = false,
 }: CountrySelectProps) {
   const { t, i18n } = useTranslation()
   const names = new Intl.DisplayNames([i18n.language], { type: 'region' })
@@ -45,7 +47,7 @@ export default function CountrySelect({
     <Autocomplete
       fullWidth
       openOnFocus={callingCode}
-      disableClearable={callingCode}
+      disableClearable={callingCode || required}
       slotProps={callingCode ? callingCodePopperProps : undefined}
       disabled={disabled}
       options={options}
@@ -78,6 +80,7 @@ export default function CountrySelect({
           {...params}
           inputRef={inputRef}
           label={label}
+          required={required}
           slotProps={{
             ...params.slotProps,
             htmlInput: { ...params.slotProps.htmlInput, 'aria-label': label },

@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from 'node:util'
 import { occupancySettingsSchema } from '@camping/contracts'
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { DataSource } from 'typeorm'
+import { DataSource, In } from 'typeorm'
 import {
   ageRangesSchema,
   campingProfileSchema,
@@ -9,6 +9,7 @@ import {
   ratesSchema,
   moneySettingsSchema,
   hasMoneyPrecision,
+  currencyDecimals,
   type CampingProfile,
 } from '@camping/contracts'
 import { ensureSafeMoney } from '../common/date'
@@ -16,6 +17,7 @@ import { conflict, zodBadRequest, notFound } from '../common/errors'
 import { withInventoryTransaction } from '../accommodations/inventory-transaction'
 import { AuditLogEntity } from '../database/entities/audit-log.entity'
 import { CampingEntity } from '../database/entities/camping.entity'
+import { ReservationEntity } from '../database/entities/reservation.entity'
 import { StayEntity } from '../database/entities/stay.entity'
 import type { AuthContext } from '../auth/auth.types'
 import { StayService } from '../stays/stay.service'
@@ -51,17 +53,18 @@ export class CampingService {
       where: { campingId: camping.id },
       relations: { extras: true, payments: true },
     })
-    const pendingAmountMinor = stays.reduce(
-      (total, stay) =>
-        ensureSafeMoney(
-          total +
-            Math.max(
-              this.stayService.account(stay, camping.timezone).balanceMinor,
-              0,
-            ),
-        ),
-      0,
-    )
+    const balances = new Map<string, number>()
+    for (const stay of stays) {
+      const amount = this.stayService.account(
+        stay,
+        camping.timezone,
+      ).balanceMinor
+      if (amount > 0)
+        balances.set(
+          stay.currency,
+          ensureSafeMoney((balances.get(stay.currency) ?? 0) + amount),
+        )
+    }
     return campingProfileSchema.parse({
       id: camping.id,
       name: camping.name,
@@ -75,7 +78,10 @@ export class CampingService {
       activeGroups: Number(row?.groups ?? 0),
       activePeople: Number(row?.people ?? 0),
       activeVehicles: Number(row?.vehicles ?? 0),
-      pendingAmountMinor,
+      pendingAmountMinor: balances.get(camping.currency) ?? 0,
+      pendingBalances: [...balances]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([currency, amountMinor]) => ({ currency, amountMinor })),
     })
   }
 
@@ -93,27 +99,68 @@ export class CampingService {
         const camping = await manager.findOneByOrFail(CampingEntity, {
           id: context.camping.id,
         })
-        const before = { name: camping.name, timezone: camping.timezone }
-        if (before.name === next.name && before.timezone === next.timezone)
+        const before = {
+          name: camping.name,
+          timezone: camping.timezone,
+          country: camping.country,
+          currency: camping.currency,
+        }
+        const after = { ...before, ...next }
+        const changingTimezone = after.timezone !== before.timezone
+        const changingCurrency = after.currency !== before.currency
+        if (
+          after.name === before.name &&
+          after.country === before.country &&
+          !changingTimezone &&
+          !changingCurrency
+        )
           return
         if (
           before.name !== expected.name ||
-          before.timezone !== expected.timezone
+          before.timezone !== expected.timezone ||
+          (expected.country !== undefined &&
+            before.country !== expected.country) ||
+          (expected.currency !== undefined &&
+            before.currency !== expected.currency)
         )
           throw conflict(
             'La configuración cambió. Revisa los datos actuales.',
             'STALE_CAMPING_PROFILE',
           )
-        if (before.timezone !== next.timezone) {
+        if (changingTimezone || changingCurrency) {
           const hasActiveStay = await manager
             .createQueryBuilder(StayEntity, 'stay')
             .where('stay.camping_id = :campingId', { campingId: camping.id })
             .andWhere('stay.closed_at IS NULL')
             .getExists()
           if (hasActiveStay)
+            throw changingCurrency
+              ? conflict(
+                  'Cierra las estadías activas antes de cambiar la moneda.',
+                  'ACTIVE_STAYS_CURRENCY',
+                )
+              : conflict(
+                  'Cierra las estadías activas antes de cambiar la zona horaria.',
+                  'ACTIVE_STAYS',
+                )
+        }
+        if (changingCurrency) {
+          if (
+            currencyDecimals(after.currency) !==
+            currencyDecimals(before.currency)
+          )
             throw conflict(
-              'Cierra las estadías activas antes de cambiar la zona horaria.',
-              'ACTIVE_STAYS',
+              'La nueva moneda debe tener la misma cantidad de decimales para conservar las tarifas configuradas.',
+              'CURRENCY_PRECISION',
+            )
+          const hasOpenReservation = await manager.existsBy(ReservationEntity, {
+            campingId: camping.id,
+            status: In(['pending', 'confirmed', 'checked_in']),
+          })
+          if (hasOpenReservation)
+            throw conflict(
+              'Finaliza las reservas abiertas antes de cambiar la moneda.',
+              'OPEN_RESERVATIONS_CURRENCY',
             )
         }
         await manager.update(CampingEntity, camping.id, {
@@ -129,7 +176,7 @@ export class CampingService {
             entityType: 'Camping',
             entityId: camping.id,
             beforeState: before,
-            afterState: next,
+            afterState: after,
           }),
         )
       },

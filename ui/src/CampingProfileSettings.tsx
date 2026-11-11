@@ -1,23 +1,24 @@
 import { useState, type FormEvent } from 'react'
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material'
 import {
   campingProfileUpdateSchema,
+  campingCurrencies,
+  currenciesByCountry,
+  timezonesByCountry,
   type CampingProfile,
   type CampingProfileUpdate,
 } from '@camping/contracts'
 import { useTranslation } from 'react-i18next'
 import { uiProps, uiStyles } from './app/theme'
+import CountrySelect from './checkIn/CountrySelect'
 import SectionCard from './components/SectionCard'
 import { useUpdateCampingProfileMutation } from './services/api'
 
@@ -26,21 +27,39 @@ export default function CampingProfileSettings({
 }: {
   profile: CampingProfile
 }) {
-  const { t } = useTranslation()
-  const [draft, setDraft] = useState<CampingProfileUpdate | null>(null)
-  const [confirmation, setConfirmation] = useState<CampingProfileUpdate | null>(
-    null,
-  )
+  const { t, i18n } = useTranslation()
+  const current = {
+    name: profile.name,
+    country: profile.country,
+    timezone: profile.timezone,
+    currency: profile.currency,
+  }
+  const [draft, setDraft] = useState<
+    (typeof current & { expected: typeof current }) | null
+  >(null)
   const [update, status] = useUpdateCampingProfileMutation()
-  const current = { name: profile.name, timezone: profile.timezone }
   const values = draft ?? { ...current, expected: current }
   const parsed = campingProfileUpdateSchema.safeParse(values)
-  const invalidTimezone =
-    !parsed.success &&
-    parsed.error.issues.some((issue) => issue.path[0] === 'timezone')
-  const changed =
-    values.name.trim() !== current.name ||
-    values.timezone.trim() !== current.timezone
+  const changed = Object.keys(current).some((key) => {
+    const field = key as keyof typeof current
+    return values[field].trim() !== current[field]
+  })
+
+  const suggestedTimezones = timezonesByCountry[values.country] ?? []
+  const suggestedCurrencies = currenciesByCountry[values.country] ?? []
+  const currencyNames = new Intl.DisplayNames([i18n.language], {
+    type: 'currency',
+  })
+  const timezoneOptions = [
+    ...new Set([
+      ...suggestedTimezones,
+      values.timezone,
+      ...Intl.supportedValuesOf('timeZone'),
+    ]),
+  ]
+  const currencyOptions = [
+    ...new Set([...suggestedCurrencies, values.currency, ...campingCurrencies]),
+  ]
 
   const error = status.error
   const httpStatus = error && 'status' in error ? error.status : undefined
@@ -48,24 +67,22 @@ export default function CampingProfileSettings({
   const code =
     data && typeof data === 'object' && 'code' in data ? data.code : undefined
 
-  async function save(input: CampingProfileUpdate) {
-    setConfirmation(null)
-    const result = await update(input)
-    if (result.data) setDraft(null)
-  }
-
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!parsed.success || !changed || status.isLoading) return
-    const input = { ...parsed.data }
-    if (httpStatus === 409 && code !== 'ACTIVE_STAYS') {
-      if (input.name === input.expected.name) input.name = current.name
-      if (input.timezone === input.expected.timezone)
+    const input: CampingProfileUpdate = { ...parsed.data }
+    if (code === 'STALE_CAMPING_PROFILE') {
+      if (values.name === values.expected.name) input.name = current.name
+      if (values.country === values.expected.country)
+        input.country = current.country
+      if (values.timezone === values.expected.timezone)
         input.timezone = current.timezone
+      if (values.currency === values.expected.currency)
+        input.currency = current.currency
       input.expected = current
     }
-    if (input.timezone !== current.timezone) setConfirmation(input)
-    else void save(input)
+    const result = await update(input)
+    if (result.data) setDraft(null)
   }
 
   return (
@@ -82,38 +99,85 @@ export default function CampingProfileSettings({
               setDraft({ ...values, name: event.target.value })
             }
           />
-          <TextField
-            label={t('settings.timezone')}
-            value={values.timezone}
+          <CountrySelect
+            label={t('settings.country')}
+            value={values.country}
             required
             disabled={status.isLoading}
-            error={invalidTimezone}
-            helperText={
-              invalidTimezone
-                ? t('settings.invalidTimezone')
-                : t('settings.timezoneExample')
-            }
-            slotProps={{ htmlInput: { maxLength: 64 } }}
-            onChange={(event) =>
-              setDraft({ ...values, timezone: event.target.value })
-            }
+            onChange={(country) => {
+              if (!country || country === values.country) return
+              setDraft({
+                ...values,
+                country,
+                timezone: timezonesByCountry[country]?.[0] ?? values.timezone,
+                currency: currenciesByCountry[country]?.[0] ?? values.currency,
+              })
+            }}
           />
-          <TextField
-            label={t('settings.currency')}
-            value={profile.currency}
-            helperText={t('settings.fixedCurrency')}
-            slotProps={{ input: { readOnly: true } }}
+          <Autocomplete
+            disableClearable
+            disabled={status.isLoading}
+            options={timezoneOptions}
+            value={values.timezone}
+            onChange={(_event, timezone) => setDraft({ ...values, timezone })}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                required
+                label={t('settings.timezone')}
+                helperText={
+                  suggestedTimezones.length === 1
+                    ? t('settings.suggestedTimezone', {
+                        timezone: suggestedTimezones[0],
+                      })
+                    : suggestedTimezones.length > 1 &&
+                      t('settings.suggestedTimezones')
+                }
+              />
+            )}
+          />
+          <Autocomplete
+            disableClearable
+            disabled={status.isLoading}
+            options={currencyOptions}
+            value={values.currency}
+            getOptionLabel={(currency) =>
+              `${currency} · ${currencyNames.of(currency) ?? currency}`
+            }
+            onChange={(_event, currency) => setDraft({ ...values, currency })}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                required
+                label={t('settings.currency')}
+                helperText={
+                  suggestedCurrencies.length > 0 &&
+                  t('settings.suggestedCurrency', {
+                    currency: suggestedCurrencies.join(', '),
+                  })
+                }
+              />
+            )}
           />
         </Box>
+        <Typography color="text.secondary">
+          {t('settings.regionalSettingsImpact')}
+        </Typography>
         {status.isError && (
           <Alert severity="error">
             {code === 'ACTIVE_STAYS'
               ? t('settings.activeStayTimezone')
-              : httpStatus === 409
-                ? t('settings.staleProfile', current)
-                : httpStatus === 401 || httpStatus === 403
-                  ? t('settings.profilePermission')
-                  : t('settings.saveError')}
+              : code === 'ACTIVE_STAYS_CURRENCY'
+                ? t('settings.activeStayCurrency')
+                : code === 'OPEN_RESERVATIONS_CURRENCY'
+                  ? t('settings.openReservationsCurrency')
+                  : code === 'CURRENCY_PRECISION'
+                    ? t('settings.currencyPrecision')
+                    : code === 'STALE_CAMPING_PROFILE'
+                      ? t('settings.staleProfile', current)
+                      : httpStatus === 401 || httpStatus === 403
+                        ? t('settings.profilePermission')
+                        : t('settings.saveError')}
           </Alert>
         )}
         <Box>
@@ -125,26 +189,6 @@ export default function CampingProfileSettings({
           </Button>
         </Box>
       </Stack>
-      <Dialog
-        open={confirmation !== null}
-        onClose={() => setConfirmation(null)}
-      >
-        <DialogTitle>{t('settings.confirmTimezone')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {confirmation &&
-              t('settings.timezoneImpact', { timezone: confirmation.timezone })}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmation(null)}>
-            {t('common.cancel')}
-          </Button>
-          <Button onClick={() => confirmation && void save(confirmation)}>
-            {t('common.save')}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </SectionCard>
   )
 }
