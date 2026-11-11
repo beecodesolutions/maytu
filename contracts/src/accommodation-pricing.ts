@@ -116,12 +116,17 @@ export const occupancySettingsSchema = z
   .strictObject({
     infantsConsumeCapacity: z.boolean().optional(),
     ageRanges: ageRangesSchema.optional(),
+    expectedAgeRanges: ageRangesSchema.optional(),
   })
   .refine(
     (settings) =>
       settings.infantsConsumeCapacity !== undefined ||
       settings.ageRanges !== undefined,
     'Indica al menos un ajuste de ocupación.',
+  )
+  .refine(
+    ({ ageRanges, expectedAgeRanges }) => !expectedAgeRanges || !!ageRanges,
+    'Indica los nuevos rangos de edad.',
   )
 export type OccupancySettings = z.infer<typeof occupancySettingsSchema>
 

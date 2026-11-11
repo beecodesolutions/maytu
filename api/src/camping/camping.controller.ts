@@ -47,7 +47,7 @@ export class CampingController {
     status: 200,
     body: openApiRef('OccupancySettings'),
     response: openApiRef('CampingProfile'),
-    errors: [400, 401, 403, 404, 413, 500],
+    errors: [400, 401, 403, 404, 409, 413, 500],
   })
   updateOccupancySettings(@Req() request: AuthenticatedRequest) {
     assertAllowedOrigin(request)

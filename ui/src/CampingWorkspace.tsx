@@ -1402,6 +1402,10 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
   const [moneyDecimals, setMoneyDecimals] = useState(profile.moneyDecimals)
   const [updateMoneySettings, moneyState] = useUpdateMoneySettingsMutation()
   const [updateOccupancy, occupancyState] = useUpdateOccupancySettingsMutation()
+  const [updateAges, ageState] = useUpdateOccupancySettingsMutation()
+  const [expectedAgeRanges, setExpectedAgeRanges] = useState<
+    CampingProfile['ageRanges'] | null
+  >(null)
   const [ageDraft, setAgeDraft] = useState<{
     infants: string
     children: string
@@ -1419,6 +1423,7 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
     children: { min: infantMax + 1, max: childMax },
     adults: { min: childMax + 1, max: null },
   })
+  const ageConflict = errorStatus(ageState.error) === '409'
   const agesChanged =
     infantMax !== profile.ageRanges.infants.max ||
     childMax !== profile.ageRanges.children.max
@@ -1523,7 +1528,10 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
               </Button>
             </Box>
           </SectionCard>
-          <SectionCard title={t('settings.guestAges')}>
+          <SectionCard
+            title={t('settings.guestAges')}
+            subtitle={t('settings.guestAgesHelp')}
+          >
             <FormControlLabel
               control={
                 <Switch
@@ -1543,13 +1551,14 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
                   type="number"
                   label={t(`settings.maxAge.${category}`)}
                   value={ageLimits[category]}
-                  disabled={occupancyState.isLoading}
-                  onChange={(event) =>
+                  disabled={ageState.isLoading}
+                  onChange={(event) => {
+                    if (!ageDraft) setExpectedAgeRanges(profile.ageRanges)
                     setAgeDraft({
                       ...ageLimits,
                       [category]: event.target.value,
                     })
-                  }
+                  }}
                 />
               ))}
             </Box>
@@ -1565,15 +1574,31 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
             {occupancyState.isError && (
               <Alert severity="error">{t('settings.saveError')}</Alert>
             )}
+            {ageState.isError && (
+              <Alert severity="error">
+                {ageConflict
+                  ? t('settings.staleAges', {
+                      infants: String(profile.ageRanges.infants.max),
+                      children: String(profile.ageRanges.children.max),
+                    })
+                  : t('settings.saveError')}
+              </Alert>
+            )}
             <Box>
               <Button
-                disabled={
-                  occupancyState.isLoading || !agesChanged || !ages.success
-                }
+                disabled={ageState.isLoading || !agesChanged || !ages.success}
                 onClick={async () => {
                   if (!ages.success) return
-                  const result = await updateOccupancy({ ageRanges: ages.data })
-                  if ('data' in result) setAgeDraft(null)
+                  const result = await updateAges({
+                    ageRanges: ages.data,
+                    expectedAgeRanges: ageConflict
+                      ? profile.ageRanges
+                      : (expectedAgeRanges ?? profile.ageRanges),
+                  })
+                  if (result.data) {
+                    setAgeDraft(null)
+                    setExpectedAgeRanges(null)
+                  }
                 }}
               >
                 {t('common.save')}

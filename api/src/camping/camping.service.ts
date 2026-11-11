@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import { occupancySettingsSchema } from '@camping/contracts'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { DataSource } from 'typeorm'
@@ -142,6 +143,7 @@ export class CampingService {
   ): Promise<CampingProfile> {
     const parsed = occupancySettingsSchema.safeParse(raw)
     if (!parsed.success) throw zodBadRequest(parsed.error)
+    const { expectedAgeRanges, ...settings } = parsed.data
     await withInventoryTransaction(
       this.dataSource,
       context,
@@ -149,8 +151,26 @@ export class CampingService {
         const camping = await manager.findOneByOrFail(CampingEntity, {
           id: context.camping.id,
         })
+        const agesChanged =
+          settings.ageRanges !== undefined &&
+          !isDeepStrictEqual(settings.ageRanges, camping.ageRanges)
+        if (
+          agesChanged &&
+          expectedAgeRanges &&
+          !isDeepStrictEqual(expectedAgeRanges, camping.ageRanges)
+        )
+          throw conflict(
+            'Los rangos de edad cambiaron. Revisa los valores actuales.',
+            'STALE_AGE_RANGES',
+          )
+        if (
+          !agesChanged &&
+          (settings.infantsConsumeCapacity === undefined ||
+            settings.infantsConsumeCapacity === camping.infantsConsumeCapacity)
+        )
+          return
         await manager.update(CampingEntity, camping.id, {
-          ...parsed.data,
+          ...settings,
           updatedAt: new Date(),
         })
         await manager.save(
@@ -167,9 +187,9 @@ export class CampingService {
             },
             afterState: {
               infantsConsumeCapacity:
-                parsed.data.infantsConsumeCapacity ??
+                settings.infantsConsumeCapacity ??
                 camping.infantsConsumeCapacity,
-              ageRanges: parsed.data.ageRanges ?? camping.ageRanges,
+              ageRanges: settings.ageRanges ?? camping.ageRanges,
             },
           }),
         )

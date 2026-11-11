@@ -1,5 +1,6 @@
 import { delay, http, HttpResponse } from 'msw'
 import {
+  ageRangesSchema,
   campingProfileUpdateSchema,
   pilotCamping,
   pilotExtras,
@@ -396,7 +397,15 @@ export const handlers = [
     if (!loggedIn) return jsonError(401)
     const parsed = occupancySettingsSchema.safeParse(await request.json())
     if (!parsed.success) return jsonError(400)
-    Object.assign(profile, parsed.data)
+    const { expectedAgeRanges, ...settings } = parsed.data
+    const currentAges = JSON.stringify(ageRangesSchema.parse(profile.ageRanges))
+    if (
+      expectedAgeRanges &&
+      JSON.stringify(expectedAgeRanges) !== currentAges &&
+      JSON.stringify(settings.ageRanges) !== currentAges
+    )
+      return HttpResponse.json({ code: 'STALE_AGE_RANGES' }, { status: 409 })
+    Object.assign(profile, settings)
     return HttpResponse.json(profile)
   }),
   http.patch('*/api/camping/money-settings', async ({ request }) => {

@@ -286,6 +286,10 @@ const es = {
       'La configuración cambió mientras editabas. Revisa los datos actuales ({{name}} · {{timezone}}) antes de guardar de nuevo.',
     profilePermission: 'Tu sesión no tiene acceso para guardar estos cambios.',
     guestAges: 'Edades y ocupación',
+    guestAgesHelp:
+      'Los cambios se aplican a nuevos ingresos y reservas. Las edades y los importes guardados se conservan.',
+    staleAges:
+      'Los rangos cambiaron mientras editabas. Revisa los máximos actuales (bebés: {{infants}}, niños: {{children}}) antes de volver a guardar.',
     infantsCapacity: 'Los bebés ocupan plaza y cama',
     maxAge: {
       infants: 'Edad máxima de bebés (años)',
