@@ -43,7 +43,7 @@ export class CampingController {
   @Patch('occupancy-settings')
   @ApiEndpoint({
     operationId: 'campingUpdateOccupancySettings',
-    summary: 'Configurar ocupación de bebés',
+    summary: 'Configurar edades de huéspedes y ocupación de bebés',
     status: 200,
     body: openApiRef('OccupancySettings'),
     response: openApiRef('CampingProfile'),

@@ -163,8 +163,14 @@ export class CampingService {
             entityId: camping.id,
             beforeState: {
               infantsConsumeCapacity: camping.infantsConsumeCapacity,
+              ageRanges: camping.ageRanges,
             },
-            afterState: parsed.data,
+            afterState: {
+              infantsConsumeCapacity:
+                parsed.data.infantsConsumeCapacity ??
+                camping.infantsConsumeCapacity,
+              ageRanges: parsed.data.ageRanges ?? camping.ageRanges,
+            },
           }),
         )
       },

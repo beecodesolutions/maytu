@@ -285,6 +285,15 @@ const es = {
     staleProfile:
       'La configuración cambió mientras editabas. Revisa los datos actuales ({{name}} · {{timezone}}) antes de guardar de nuevo.',
     profilePermission: 'Tu sesión no tiene acceso para guardar estos cambios.',
+    guestAges: 'Edades y ocupación',
+    infantsCapacity: 'Los bebés ocupan plaza y cama',
+    maxAge: {
+      infants: 'Edad máxima de bebés (años)',
+      children: 'Edad máxima de niños (años)',
+    },
+    adultAge: 'La tarifa de adulto se aplica desde los {{age}} años.',
+    invalidAges:
+      'Usa edades enteras y no negativas. La edad máxima de niños debe ser mayor que la de bebés.',
     money: 'Importes',
     useCents: 'Usar centavos',
     moneyHelp:

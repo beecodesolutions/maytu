@@ -195,6 +195,16 @@ test('restricted runtime supports pricing settings, allocation, edits and cancel
   await campingService.updateOccupancySettings(context, {
     infantsConsumeCapacity: false,
   })
+  const ageRanges = {
+    infants: { min: 0, max: 2 },
+    children: { min: 3, max: 11 },
+    adults: { min: 12, max: null },
+  }
+  const profile = await campingService.updateOccupancySettings(context, {
+    ageRanges,
+  })
+  assert.deepEqual(profile.ageRanges, ageRanges)
+  assert.equal(profile.infantsConsumeCapacity, false)
   const type = await types.createType(context, {
     name: 'Runtime dorm',
     inventoryMode: 'shared',

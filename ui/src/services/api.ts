@@ -34,6 +34,7 @@ import type {
   AvailabilityResponse,
   CampingProfile,
   CampingProfileUpdate,
+  OccupancySettings,
   CheckInRequest,
   ExtraTemplate,
   PaymentInput,
@@ -524,7 +525,7 @@ export const apiSlice = createApi({
     }),
     updateOccupancySettings: builder.mutation<
       CampingProfile,
-      { infantsConsumeCapacity: boolean }
+      OccupancySettings
     >({
       query: (body) => ({
         url: '/camping/occupancy-settings',

@@ -14,6 +14,7 @@ import {
   quoteRequestSchema,
   ratesSchema,
   moneySettingsSchema,
+  occupancySettingsSchema,
   todayInTimezone,
 } from '@camping/contracts'
 import type {
@@ -389,6 +390,13 @@ export const handlers = [
     if (timezone !== profile.timezone && stays.some((stay) => !stay.closure))
       return HttpResponse.json({ code: 'ACTIVE_STAYS' }, { status: 409 })
     Object.assign(profile, { name, timezone })
+    return HttpResponse.json(profile)
+  }),
+  http.patch('*/api/camping/occupancy-settings', async ({ request }) => {
+    if (!loggedIn) return jsonError(401)
+    const parsed = occupancySettingsSchema.safeParse(await request.json())
+    if (!parsed.success) return jsonError(400)
+    Object.assign(profile, parsed.data)
     return HttpResponse.json(profile)
   }),
   http.patch('*/api/camping/money-settings', async ({ request }) => {

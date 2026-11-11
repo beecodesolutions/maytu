@@ -49,7 +49,7 @@ import {
 } from 'lucide-react'
 import LucideIcon from './components/LucideIcon'
 import MoneyField from './components/MoneyField'
-import { paymentInputSchema } from '@camping/contracts'
+import { ageRangesSchema, paymentInputSchema } from '@camping/contracts'
 import type {
   CampingProfile,
   PaymentInput,
@@ -79,6 +79,7 @@ import {
   useUpdateExtraTemplateMutation,
   useUpdateRatesMutation,
   useUpdateMoneySettingsMutation,
+  useUpdateOccupancySettingsMutation,
 } from './services/api'
 import CheckInDialog from './CheckInDialog'
 import ReservationCreateDialog from './ReservationCreateDialog'
@@ -1400,6 +1401,27 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
   >(null)
   const [moneyDecimals, setMoneyDecimals] = useState(profile.moneyDecimals)
   const [updateMoneySettings, moneyState] = useUpdateMoneySettingsMutation()
+  const [updateOccupancy, occupancyState] = useUpdateOccupancySettingsMutation()
+  const [ageDraft, setAgeDraft] = useState<{
+    infants: string
+    children: string
+  } | null>(null)
+  const ageLimits = ageDraft ?? {
+    infants: String(profile.ageRanges.infants.max),
+    children: String(profile.ageRanges.children.max),
+  }
+  const infantMax =
+    ageLimits.infants.trim() === '' ? NaN : Number(ageLimits.infants)
+  const childMax =
+    ageLimits.children.trim() === '' ? NaN : Number(ageLimits.children)
+  const ages = ageRangesSchema.safeParse({
+    infants: { min: 0, max: infantMax },
+    children: { min: infantMax + 1, max: childMax },
+    adults: { min: childMax + 1, max: null },
+  })
+  const agesChanged =
+    infantMax !== profile.ageRanges.infants.max ||
+    childMax !== profile.ageRanges.children.max
   const [error, setError] = useState('')
   const saveRates = async () => {
     try {
@@ -1495,6 +1517,63 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
                   } catch {
                     setError(t('settings.saveError'))
                   }
+                }}
+              >
+                {t('common.save')}
+              </Button>
+            </Box>
+          </SectionCard>
+          <SectionCard title={t('settings.guestAges')}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={profile.infantsConsumeCapacity ?? false}
+                  disabled={occupancyState.isLoading}
+                  onChange={(_, checked) => {
+                    void updateOccupancy({ infantsConsumeCapacity: checked })
+                  }}
+                />
+              }
+              label={t('settings.infantsCapacity')}
+            />
+            <Box sx={uiStyles.formGrid}>
+              {(['infants', 'children'] as const).map((category) => (
+                <TextField
+                  key={category}
+                  type="number"
+                  label={t(`settings.maxAge.${category}`)}
+                  value={ageLimits[category]}
+                  disabled={occupancyState.isLoading}
+                  onChange={(event) =>
+                    setAgeDraft({
+                      ...ageLimits,
+                      [category]: event.target.value,
+                    })
+                  }
+                />
+              ))}
+            </Box>
+            {ages.success ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('settings.adultAge', { age: ages.data.adults.min })}
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="error">
+                {t('settings.invalidAges')}
+              </Typography>
+            )}
+            {occupancyState.isError && (
+              <Alert severity="error">{t('settings.saveError')}</Alert>
+            )}
+            <Box>
+              <Button
+                disabled={
+                  occupancyState.isLoading || !agesChanged || !ages.success
+                }
+                onClick={async () => {
+                  if (!ages.success) return
+                  const result = await updateOccupancy({ ageRanges: ages.data })
+                  if ('data' in result) setAgeDraft(null)
                 }}
               >
                 {t('common.save')}
