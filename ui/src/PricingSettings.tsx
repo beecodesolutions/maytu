@@ -1,3 +1,4 @@
+import SectionCard from './components/SectionCard'
 import { useState } from 'react'
 import {
   Alert,
@@ -5,7 +6,6 @@ import {
   Checkbox,
   FormControlLabel,
   MenuItem,
-  Paper,
   Stack,
   TextField,
   Typography,
@@ -68,37 +68,39 @@ export default function PricingSettings({
   const type = types.data?.find((x) => x.id === selected)
   return (
     <Stack {...uiProps.stackSection}>
-      <FormControlLabel
-        label={t('pricing.infantsCapacity')}
-        control={
-          <Checkbox
-            checked={profile.infantsConsumeCapacity ?? false}
-            disabled={status.isLoading}
-            onChange={(_event, value) => {
-              void updateOccupancy({ infantsConsumeCapacity: value })
-            }}
-          />
-        }
-      />
-      {status.isError && (
-        <Alert severity="error">{t('settings.saveError')}</Alert>
-      )}
-      {types.isError && (
-        <Alert severity="error">{t('settings.saveError')}</Alert>
-      )}
-      <TextField
-        select
-        label={t('reservationCreate.type')}
-        value={selected}
-        onChange={(e) => setSelected(e.target.value)}
-      >
-        <MenuItem value="">{t('pricing.addType')}</MenuItem>
-        {types.data?.map((item) => (
-          <MenuItem key={item.id} value={item.id}>
-            {item.name}
-          </MenuItem>
-        ))}
-      </TextField>
+      <SectionCard title={t('settings.accommodationsTab')}>
+        <FormControlLabel
+          label={t('pricing.infantsCapacity')}
+          control={
+            <Checkbox
+              checked={profile.infantsConsumeCapacity ?? false}
+              disabled={status.isLoading}
+              onChange={(_event, value) => {
+                void updateOccupancy({ infantsConsumeCapacity: value })
+              }}
+            />
+          }
+        />
+        {status.isError && (
+          <Alert severity="error">{t('settings.saveError')}</Alert>
+        )}
+        {types.isError && (
+          <Alert severity="error">{t('settings.saveError')}</Alert>
+        )}
+        <TextField
+          select
+          label={t('reservationCreate.type')}
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+        >
+          <MenuItem value="">{t('pricing.addType')}</MenuItem>
+          {types.data?.map((item) => (
+            <MenuItem key={item.id} value={item.id}>
+              {item.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      </SectionCard>
       <TypePricingEditor
         key={selected}
         type={type}
@@ -177,7 +179,7 @@ function TypePricingEditor({
       discounts: pricing.discounts.map((d, i) => (i === index ? rule : d)),
     })
   return (
-    <Paper variant="outlined" sx={uiStyles.panelPadding}>
+    <SectionCard title={type ? type.name : t('pricing.addType')}>
       <Stack {...uiProps.stackForm}>
         <TextField
           label={t('pricing.name')}
@@ -512,7 +514,7 @@ function TypePricingEditor({
           {t('common.save')}
         </Button>
       </Stack>
-    </Paper>
+    </SectionCard>
   )
 }
 function UnitSettings({ type }: { type: AccommodationType }) {
@@ -523,8 +525,7 @@ function UnitSettings({ type }: { type: AccommodationType }) {
   const [create, status] = useCreateAccommodationUnitMutation()
   if (type.inventoryMode === 'unlimited') return null
   return (
-    <Stack {...uiProps.stackForm}>
-      <Typography variant="h6">{t('pricing.units')}</Typography>
+    <SectionCard title={t('pricing.units')}>
       {units.data
         ?.filter((u) => u.typeId === type.id)
         .map((unit) => (
@@ -564,7 +565,7 @@ function UnitSettings({ type }: { type: AccommodationType }) {
       {status.isError && (
         <Alert severity="error">{t('settings.saveError')}</Alert>
       )}
-    </Stack>
+    </SectionCard>
   )
 }
 function BedSettings({ unitId }: { unitId: string }) {
@@ -630,7 +631,7 @@ function UnitEditor({
   const [enabled, setEnabled] = useState(unit.enabled)
   const [update, status] = useUpdateAccommodationUnitMutation()
   return (
-    <Paper variant="outlined" sx={uiStyles.panelPadding}>
+    <Box sx={uiStyles.sectionForm}>
       <Stack {...uiProps.stackForm}>
         <TextField
           label={t('pricing.name')}
@@ -665,6 +666,6 @@ function UnitEditor({
         )}
         {shared && <BedSettings unitId={unit.id} />}
       </Stack>
-    </Paper>
+    </Box>
   )
 }

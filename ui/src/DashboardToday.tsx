@@ -1,3 +1,5 @@
+import SectionCard from './components/SectionCard'
+import { navigateWorkspace, workspaceHref } from './app/workspaceLocation'
 import { uiProps, uiStyles, checkoutActionStyles } from './app/theme'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +11,6 @@ import {
   IconButton,
   List,
   ListItem,
-  Paper,
   Stack,
   Tooltip,
   Typography,
@@ -199,10 +200,7 @@ function TodaySectionHeading({
 }) {
   return (
     <Box component="summary" sx={uiStyles.dashboardTodaySummary}>
-      <Typography
-        variant="h3"
-        sx={uiStyles.dashboardTodayHeading(overdue)}
-      >
+      <Typography variant="h3" sx={uiStyles.dashboardTodayHeading(overdue)}>
         {title}
         <Typography
           component="span"
@@ -459,22 +457,11 @@ export default function DashboardToday({
   if (!dashboard) return null
 
   return (
-    <Stack {...uiProps.stackStandard}>
-      <Paper
-        component="section"
-        variant="outlined"
-        sx={uiStyles.dashboardTodayPaper}
+    <Stack {...uiProps.stackSection}>
+      <SectionCard
+        title={t('home.todayTitle')}
+        subtitle={`${formatDate(today, i18n.language)} · ${profile.timezone}`}
       >
-        <Typography component="h2" variant="h6" sx={uiStyles.boldText}>
-          {t('home.todayTitle')}
-        </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={uiStyles.bottomGap}
-        >
-          {formatDate(today, i18n.language)} · {profile.timezone}
-        </Typography>
         <Stack {...uiProps.stackSmall} divider={<Divider />}>
           <Box component="details" open>
             <TodaySectionHeading
@@ -556,7 +543,7 @@ export default function DashboardToday({
             </Box>
           )}
         </Stack>
-      </Paper>
+      </SectionCard>
       {checkInReservation && (
         <ReservationCheckInDialog
           reservation={checkInReservation}
@@ -572,8 +559,6 @@ export default function DashboardToday({
         titleId="active-stays-title"
         title={t('home.activeStays')}
         subtitle={t('home.activeStaysCount', { count: activeStays.length })}
-        titleVariant="h6"
-        {...uiProps.compactWidget}
         action={
           <AccommodationFilter
             value={activeFilter}
@@ -590,6 +575,11 @@ export default function DashboardToday({
           unitNames={unitNames}
           reservationsById={reservationsById}
         />
+        <Box>
+          <Button href={workspaceHref('stays')} onClick={navigateWorkspace}>
+            {t('navigation.allStays')}
+          </Button>
+        </Box>
       </DashboardWidget>
     </Stack>
   )

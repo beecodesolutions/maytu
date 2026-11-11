@@ -1,3 +1,4 @@
+import SectionCard from './components/SectionCard'
 import { uiProps, uiStyles } from './app/theme'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -6,7 +7,6 @@ import {
   Box,
   Button,
   Chip,
-  Paper,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
@@ -108,25 +108,13 @@ function DayDetail({
   if (!selected || !type) return null
   const currentReservations = reservationState.items
   return (
-    <Paper
-      component="section"
-      aria-labelledby="calendar-day-detail-title"
-      variant="outlined"
-      sx={uiStyles.compactPanel}
+    <SectionCard
+      titleId="calendar-day-detail-title"
+      title={new Intl.DateTimeFormat(i18n.language, {
+        dateStyle: 'full',
+        timeZone: 'UTC',
+      }).format(new Date(`${selected.date}T12:00:00Z`))}
     >
-      <Stack {...uiProps.row} sx={uiStyles.dayDetailStack}>
-        <Box>
-          <Typography
-            id="calendar-day-detail-title"
-            variant="h3"
-          >
-            {new Intl.DateTimeFormat(i18n.language, {
-              dateStyle: 'full',
-              timeZone: 'UTC',
-            }).format(new Date(`${selected.date}T12:00:00Z`))}
-          </Typography>
-        </Box>
-      </Stack>
       <Box sx={uiStyles.dayDetailBox}>
         {!summary ? (
           <Typography color="text.secondary" sx={uiStyles.bottomGap}>
@@ -229,7 +217,7 @@ function DayDetail({
           ))}
         </Stack>
       </Box>
-    </Paper>
+    </SectionCard>
   )
 }
 
@@ -306,62 +294,65 @@ export default function AvailabilityCalendar({
   )
 
   return (
-    <Stack {...uiProps.stackMedium}>
-      <Box sx={uiStyles.availabilityToolbar}>
-        {enabledTypes.length > 0 && (
-          <ToggleButtonGroup
-            value={activeTypeId}
-            exclusive
-            onChange={(_, value: string | null) =>
-              value && setSelectedType(value)
-            }
-            aria-label={t('calendar.typeFilter')}
-            size="small"
-            sx={uiStyles.availabilityCalendarToggleButtonGroup}
-          >
-            {enabledTypes.map((type) => (
-              <ToggleButton key={type.id} value={type.id}>
-                {type.name}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        )}
-        <Button
-          size="small"
-          disabled={!activeTypeId}
-          onClick={() => {
-            setMonth(monthKey(today))
-            if (activeTypeId)
-              setSelectedDay({ date: today, typeId: activeTypeId })
-          }}
-        >
-          {t('calendar.today')}
-        </Button>
-      </Box>
-      {types.isLoading || availability.isLoading ? (
-        <Typography color="text.secondary">{t('common.loading')}</Typography>
-      ) : null}
-      {(types.isError || availability.isError) && (
-        <Alert
-          severity="error"
-          action={
-            <Button
-              onClick={() => {
-                void types.refetch()
-                void availability.refetch()
-              }}
+    <Box sx={uiStyles.availabilityWorkspace}>
+      <SectionCard
+        title={t('calendar.title')}
+        subtitle={t('navigation.reservationsHelp')}
+      >
+        <Box sx={uiStyles.availabilityToolbar}>
+          {enabledTypes.length > 0 && (
+            <ToggleButtonGroup
+              value={activeTypeId}
+              exclusive
+              onChange={(_, value: string | null) =>
+                value && setSelectedType(value)
+              }
+              aria-label={t('calendar.typeFilter')}
+              size="small"
+              sx={uiStyles.availabilityCalendarToggleButtonGroup}
             >
-              {t('common.retry')}
-            </Button>
-          }
-        >
-          {t('calendar.loadError')}
-        </Alert>
-      )}
-      {!types.isLoading && enabledTypes.length === 0 && (
-        <Alert severity="info">{t('calendar.empty')}</Alert>
-      )}
-      <Box sx={uiStyles.availabilityWorkspace}>
+              {enabledTypes.map((type) => (
+                <ToggleButton key={type.id} value={type.id}>
+                  {type.name}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          )}
+          <Button
+            size="small"
+            disabled={!activeTypeId}
+            onClick={() => {
+              setMonth(monthKey(today))
+              if (activeTypeId)
+                setSelectedDay({ date: today, typeId: activeTypeId })
+            }}
+          >
+            {t('calendar.today')}
+          </Button>
+        </Box>
+        {types.isLoading || availability.isLoading ? (
+          <Typography color="text.secondary">{t('common.loading')}</Typography>
+        ) : null}
+        {(types.isError || availability.isError) && (
+          <Alert
+            severity="error"
+            action={
+              <Button
+                onClick={() => {
+                  void types.refetch()
+                  void availability.refetch()
+                }}
+              >
+                {t('common.retry')}
+              </Button>
+            }
+          >
+            {t('calendar.loadError')}
+          </Alert>
+        )}
+        {!types.isLoading && enabledTypes.length === 0 && (
+          <Alert severity="info">{t('calendar.empty')}</Alert>
+        )}
         <Stack {...uiProps.stackMedium}>
           {displayedType && (
             <Box component="section">
@@ -402,18 +393,18 @@ export default function AvailabilityCalendar({
           )}
           <CalendarLegend />
         </Stack>
-        {visibleSelectedDay && (
-          <DayDetail
-            key={`${visibleSelectedDay.date}:${visibleSelectedDay.typeId}:${refreshKey}`}
-            selected={visibleSelectedDay}
-            summary={visibleSummary}
-            type={visibleAccommodationType}
-            typeNames={typeNames}
-            typeModes={typeModes}
-            unitNames={unitNames}
-          />
-        )}
-      </Box>
-    </Stack>
+      </SectionCard>
+      {visibleSelectedDay && (
+        <DayDetail
+          key={`${visibleSelectedDay.date}:${visibleSelectedDay.typeId}:${refreshKey}`}
+          selected={visibleSelectedDay}
+          summary={visibleSummary}
+          type={visibleAccommodationType}
+          typeNames={typeNames}
+          typeModes={typeModes}
+          unitNames={unitNames}
+        />
+      )}
+    </Box>
   )
 }

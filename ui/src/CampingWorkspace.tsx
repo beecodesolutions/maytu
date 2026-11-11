@@ -1,3 +1,6 @@
+import TabbedSection from './components/TabbedSection'
+import SectionTabs from './components/SectionTabs'
+import SectionCard from './components/SectionCard'
 import PricingSettings from './PricingSettings'
 import { uiProps, uiStyles } from './app/theme'
 import AccommodationFilter from './AccommodationFilter'
@@ -31,12 +34,18 @@ import {
   Skeleton,
   Stack,
   Tab,
-  Tabs,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
-import { ChevronDown, Pencil, Plus, RotateCcw, Settings, Trash2 } from 'lucide-react'
+import {
+  ChevronDown,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Settings,
+  Trash2,
+} from 'lucide-react'
 import LucideIcon from './components/LucideIcon'
 import MoneyField from './components/MoneyField'
 import { paymentInputSchema } from '@camping/contracts'
@@ -279,19 +288,12 @@ export default function CampingWorkspace({
                   />
                 </Box>
               </Box>
-              <Box sx={uiStyles.topGap}>
+              <Box sx={uiStyles.sectionTopGap}>
                 <DashboardToday
                   profile={profile}
                   onSelect={setSelection}
                   refreshKey={todayRefreshKey}
                 />
-                <Button
-                  href={workspaceHref('stays')}
-                  onClick={navigateWorkspace}
-                  sx={uiStyles.topGap}
-                >
-                  {t('navigation.allStays')}
-                </Button>
               </Box>
             </>
           ) : (
@@ -299,20 +301,10 @@ export default function CampingWorkspace({
           ))}
         {section === 'reservations' &&
           (profile ? (
-            <Stack {...uiProps.stackStandard}>
-              <Box>
-                <Typography component="h2" variant="h6">
-                  {t('calendar.title')}
-                </Typography>
-                <Typography color="text.secondary">
-                  {t('navigation.reservationsHelp')}
-                </Typography>
-              </Box>
-              <AvailabilityCalendar
-                profile={profile}
-                refreshKey={todayRefreshKey}
-              />
-            </Stack>
+            <AvailabilityCalendar
+              profile={profile}
+              refreshKey={todayRefreshKey}
+            />
           ) : (
             <LoadingPanel />
           ))}
@@ -323,31 +315,22 @@ export default function CampingWorkspace({
             <LoadingPanel />
           )
         ) : section === 'stays' ? (
-          <Stack
-            component={Paper}
-            variant="outlined"
-            {...uiProps.stackStandard}
-            sx={uiStyles.staysFilters}
-          >
-            <Stack
-              {...uiProps.rowSmall}
-
-              sx={uiStyles.rowBetween}
-            >
-              <Tabs
+          <TabbedSection
+            tabs={
+              <SectionTabs
                 value={stayStatus}
                 onChange={(_, value: 'active' | 'closed') => {
                   setStayStatus(value)
                   scrollWorkspaceToTop()
                 }}
-                variant="scrollable"
-                scrollButtons={false}
-                sx={uiStyles.campingWorkspaceTabs}
                 aria-label={t('navigation.stayViews')}
               >
                 <Tab value="active" label={t('navigation.inProgress')} />
                 <Tab value="closed" label={t('home.closedStays')} />
-              </Tabs>
+              </SectionTabs>
+            }
+          >
+            <SectionCard>
               <AccommodationFilter
                 value={accommodation}
                 onChange={(value) => {
@@ -355,75 +338,75 @@ export default function CampingWorkspace({
                   scrollWorkspaceToTop()
                 }}
               />
-            </Stack>
-            {stays.isError && (
-              <Alert severity="error">
-                {t('home.loadError')}{' '}
-                <Button
-                  onClick={() =>
-                    void (stays.currentData && stays.hasNextPage
-                      ? stays.fetchNextPage()
-                      : stays.refetch())
-                  }
+              {stays.isError && (
+                <Alert severity="error">
+                  {t('home.loadError')}{' '}
+                  <Button
+                    onClick={() =>
+                      void (stays.currentData && stays.hasNextPage
+                        ? stays.fetchNextPage()
+                        : stays.refetch())
+                    }
+                  >
+                    {t('common.retry')}
+                  </Button>
+                </Alert>
+              )}
+              {stays.currentData && profile && (
+                <EnrichedStayList
+                  items={stays.currentData.pages.flatMap((page) => page.items)}
+                  timezone={profile.timezone}
+                  onSelect={setSelection}
+                />
+              )}
+              {stays.isFetching && (
+                <Stack
+                  role="status"
+                  aria-label={t('home.loading')}
+                  {...uiProps.stackStandard}
                 >
-                  {t('common.retry')}
-                </Button>
-              </Alert>
-            )}
-            {stays.currentData && profile && (
-              <EnrichedStayList
-                items={stays.currentData.pages.flatMap((page) => page.items)}
-                timezone={profile.timezone}
-                onSelect={setSelection}
+                  {Array.from(
+                    { length: stays.currentData ? 2 : 4 },
+                    (_, index) => (
+                      <Stack
+                        key={index}
+                        {...uiProps.rowStandard}
+
+                        sx={uiStyles.campingWorkspaceStack3}
+                      >
+                        <Box sx={uiStyles.campingWorkspaceBox6}>
+                          <Skeleton
+                            variant="text"
+                            {...uiProps.guestNamePlaceholder}
+                          />
+                          <Skeleton
+                            variant="text"
+                            {...uiProps.guestDetailsPlaceholder}
+                          />
+                        </Box>
+                        <Skeleton
+                          variant="text"
+                          {...uiProps.amountPlaceholder}
+
+                          sx={uiStyles.desktopBlock}
+                        />
+                        <Skeleton
+                          variant="rounded"
+                          {...uiProps.actionPlaceholder}
+                        />
+                      </Stack>
+                    ),
+                  )}
+                </Stack>
+              )}
+              <InfiniteStayLoader
+                hasMore={Boolean(stays.hasNextPage)}
+                loading={stays.isFetching}
+                failed={stays.isError}
+                onLoad={() => void stays.fetchNextPage()}
               />
-            )}
-            {stays.isFetching && (
-              <Stack
-                role="status"
-                aria-label={t('home.loading')}
-                {...uiProps.stackStandard}
-              >
-                {Array.from(
-                  { length: stays.currentData ? 2 : 4 },
-                  (_, index) => (
-                    <Stack
-                      key={index}
-                      {...uiProps.rowStandard}
-
-                      sx={uiStyles.campingWorkspaceStack3}
-                    >
-                      <Box sx={uiStyles.campingWorkspaceBox6}>
-                        <Skeleton
-                          variant="text"
-                          {...uiProps.guestNamePlaceholder}
-                        />
-                        <Skeleton
-                          variant="text"
-                          {...uiProps.guestDetailsPlaceholder}
-                        />
-                      </Box>
-                      <Skeleton
-                        variant="text"
-                        {...uiProps.amountPlaceholder}
-
-                        sx={uiStyles.desktopBlock}
-                      />
-                      <Skeleton
-                        variant="rounded"
-                        {...uiProps.actionPlaceholder}
-                      />
-                    </Stack>
-                  ),
-                )}
-              </Stack>
-            )}
-            <InfiniteStayLoader
-              hasMore={Boolean(stays.hasNextPage)}
-              loading={stays.isFetching}
-              failed={stays.isError}
-              onLoad={() => void stays.fetchNextPage()}
-            />
-          </Stack>
+            </SectionCard>
+          </TabbedSection>
         ) : null}
       </WorkspaceLayout>
       {(section === 'home' ||
@@ -1435,39 +1418,36 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
     a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, i18n.language),
   )
   return (
-    <Stack {...uiProps.stackSection}>
-      <Tabs
-        value={tab}
-        variant="scrollable"
-        scrollButtons={false}
-        sx={uiStyles.campingWorkspaceTabs}
-        aria-label={t('settings.title')}
-      >
-        <Tab
-          value="general"
-          href={settingsTabHref('general')}
-          onClick={navigateWorkspace}
-          label={t('settings.generalTab')}
-          id="settings-general-tab"
-          aria-controls="settings-general-panel"
-        />
-        <Tab
-          value="accommodations"
-          href={settingsTabHref('accommodations')}
-          onClick={navigateWorkspace}
-          label={t('settings.accommodationsTab')}
-          id="settings-accommodations-tab"
-          aria-controls="settings-accommodations-panel"
-        />
-        <Tab
-          value="extras"
-          href={settingsTabHref('extras')}
-          onClick={navigateWorkspace}
-          label={t('settings.templates')}
-          id="settings-extras-tab"
-          aria-controls="settings-extras-panel"
-        />
-      </Tabs>
+    <TabbedSection
+      tabs={
+        <SectionTabs value={tab} aria-label={t('settings.title')}>
+          <Tab
+            value="general"
+            href={settingsTabHref('general')}
+            onClick={navigateWorkspace}
+            label={t('settings.generalTab')}
+            id="settings-general-tab"
+            aria-controls="settings-general-panel"
+          />
+          <Tab
+            value="accommodations"
+            href={settingsTabHref('accommodations')}
+            onClick={navigateWorkspace}
+            label={t('settings.accommodationsTab')}
+            id="settings-accommodations-tab"
+            aria-controls="settings-accommodations-panel"
+          />
+          <Tab
+            value="extras"
+            href={settingsTabHref('extras')}
+            onClick={navigateWorkspace}
+            label={t('settings.templates')}
+            id="settings-extras-tab"
+            aria-controls="settings-extras-panel"
+          />
+        </SectionTabs>
+      }
+    >
       {error && <Alert severity="error">{error}</Alert>}
       <Box
         role="tabpanel"
@@ -1484,16 +1464,17 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
         hidden={tab !== 'general'}
       >
         <Stack {...uiProps.stackSection}>
-          <Paper variant="outlined" sx={uiStyles.panelPadding}>
-            <Typography variant="h6">{t('settings.money')}</Typography>
-            <Typography color="text.secondary">
-              {t('settings.moneyHelp')}
-            </Typography>
+          <SectionCard
+            title={t('settings.money')}
+            subtitle={t('settings.moneyHelp')}
+          >
             <FormControlLabel
               control={
                 <Switch
                   checked={moneyDecimals === null}
-                  onChange={(_, checked) => setMoneyDecimals(checked ? null : 0)}
+                  onChange={(_, checked) =>
+                    setMoneyDecimals(checked ? null : 0)
+                  }
                 />
               }
               label={t('settings.useCents')}
@@ -1501,7 +1482,8 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
             <Box>
               <Button
                 disabled={
-                  moneyState.isLoading || moneyDecimals === profile.moneyDecimals
+                  moneyState.isLoading ||
+                  moneyDecimals === profile.moneyDecimals
                 }
                 onClick={async () => {
                   try {
@@ -1514,16 +1496,11 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
                 {t('common.save')}
               </Button>
             </Box>
-          </Paper>
-          <Paper variant="outlined" sx={uiStyles.panelPadding}>
-            <Typography variant="h6">{t('settings.rates')}</Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={uiStyles.bottomGap}
-            >
-              {t('settings.ratesHelp')}
-            </Typography>
+          </SectionCard>
+          <SectionCard
+            title={t('settings.rates')}
+            subtitle={t('settings.ratesHelp')}
+          >
             <Stack {...uiProps.stackStandard}>
               {(['adults', 'children', 'infants'] as const).map((category) => (
                 <Stack
@@ -1604,7 +1581,9 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
                             size="small"
                             color="primary"
                             aria-label={t('settings.editRate')}
-                            disabled={editingRate !== null || ratesState.isLoading}
+                            disabled={
+                              editingRate !== null || ratesState.isLoading
+                            }
                             onClick={() => {
                               setRates(profile.rates)
                               setError('')
@@ -1620,7 +1599,7 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
                 </Stack>
               ))}
             </Stack>
-          </Paper>
+          </SectionCard>
         </Stack>
       </Box>
       <Box
@@ -1630,12 +1609,11 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
         hidden={tab !== 'extras'}
       >
         <Stack {...uiProps.stackSection}>
-          <Paper variant="outlined" sx={uiStyles.panelPadding}>
+          <SectionCard title={t('settings.createTemplate')}>
             <CreateExtraForm profile={profile} categories={categories} />
-          </Paper>
-          <Paper variant="outlined" sx={uiStyles.panelPadding}>
-            <Typography variant="h6">{t('settings.templates')}</Typography>
-            <Stack {...uiProps.stackStandard} sx={uiStyles.topGap}>
+          </SectionCard>
+          <SectionCard title={t('settings.templates')}>
+            <Stack {...uiProps.stackStandard}>
               {templates.isError && (
                 <Alert severity="error">{t('settings.loadError')}</Alert>
               )}
@@ -1657,7 +1635,8 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
                         aria-controls={`settings-extra-items-${index}`}
                       >
                         <Typography component="span" variant="h3">
-                          {category || t('settings.uncategorized')} ({items.length})
+                          {category || t('settings.uncategorized')} (
+                          {items.length})
                         </Typography>
                       </AccordionSummary>
                       <AccordionDetails>
@@ -1702,10 +1681,10 @@ function SettingsPanel({ profile }: { profile: CampingProfile }) {
                 })}
               </Box>
             </Stack>
-          </Paper>
+          </SectionCard>
         </Stack>
       </Box>
-    </Stack>
+    </TabbedSection>
   )
 }
 function CreateExtraForm({
@@ -1776,9 +1755,7 @@ function CreateExtraForm({
         moneyDecimals={profile.moneyDecimals}
         valueMinor={unitPriceMinor}
         showCurrencyInInput
-        onChangeMinor={(value) =>
-          setUnitPriceMinor(value === '' ? NaN : value)
-        }
+        onChangeMinor={(value) => setUnitPriceMinor(value === '' ? NaN : value)}
       />
       <Button
         variant="contained"
