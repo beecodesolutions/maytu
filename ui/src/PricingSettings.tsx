@@ -1,16 +1,25 @@
 import SectionCard from './components/SectionCard'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
   Checkbox,
   FormControlLabel,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
   MenuItem,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material'
+import { ArrowLeft, ChevronDown, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   accommodationPricingSchema,
@@ -22,6 +31,7 @@ import {
 } from '@camping/contracts'
 import { uiProps, uiStyles } from './app/theme'
 import MoneyField from './components/MoneyField'
+import LucideIcon from './components/LucideIcon'
 import {
   useAccommodationTypesQuery,
   useAccommodationUnitsQuery,
@@ -31,7 +41,6 @@ import {
   useCreateAccommodationUnitMutation,
   useUpdateAccommodationUnitMutation,
   useSaveAccommodationBedMutation,
-  useUpdateOccupancySettingsMutation,
 } from './services/api'
 
 const categories = ['adults', 'children', 'infants'] as const
@@ -64,51 +73,117 @@ export default function PricingSettings({
 }) {
   const { t } = useTranslation()
   const types = useAccommodationTypesQuery()
-  const [selected, setSelected] = useState('')
-  const [updateOccupancy, status] = useUpdateOccupancySettingsMutation()
-  const type = types.data?.find((x) => x.id === selected)
+  const [selection, setSelection] = useState<
+    { mode: 'new' } | { mode: 'edit'; id: string } | null
+  >(null)
+  const [updateType, typeStatus] = useUpdateAccommodationTypeMutation()
+  const type =
+    selection?.mode === 'edit'
+      ? types.data?.find((item) => item.id === selection.id)
+      : undefined
+
+  if (selection) {
+    return (
+      <Stack {...uiProps.stackSection}>
+        <Box>
+          <Button
+            size="small"
+            startIcon={<LucideIcon icon={ArrowLeft} />}
+            onClick={() => setSelection(null)}
+          >
+            {t('pricing.backToTypes')}
+          </Button>
+        </Box>
+        {selection.mode === 'new' || type ? (
+          <TypePricingEditor
+            key={type?.id ?? 'new'}
+            type={type}
+            profile={profile}
+            onSaved={(saved) => {
+              if (selection.mode === 'new') {
+                setSelection((current) =>
+                  current === selection
+                    ? { mode: 'edit', id: saved.id }
+                    : current,
+                )
+              }
+            }}
+          />
+        ) : types.isFetching ? (
+          <Typography role="status">{t('common.loading')}</Typography>
+        ) : (
+          <Alert severity="error">
+            {t('reservationCreate.inventoryError')}
+          </Alert>
+        )}
+        {type && type.inventoryMode !== 'unlimited' && (
+          <UnitSettings key={`${type.id}:${type.inventoryMode}`} type={type} />
+        )}
+      </Stack>
+    )
+  }
+
   return (
     <Stack {...uiProps.stackSection}>
-      <SectionCard title={t('settings.accommodationsTab')}>
-        <FormControlLabel
-          label={t('pricing.infantsCapacity')}
-          control={
-            <Checkbox
-              checked={profile.infantsConsumeCapacity ?? false}
-              disabled={status.isLoading}
-              onChange={(_event, value) => {
-                void updateOccupancy({ infantsConsumeCapacity: value })
-              }}
-            />
-          }
-        />
-        {status.isError && (
-          <Alert severity="error">{t('settings.saveError')}</Alert>
-        )}
+      <SectionCard
+        title={t('settings.accommodationsTab')}
+        action={
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<LucideIcon icon={Plus} />}
+            onClick={() => setSelection({ mode: 'new' })}
+          >
+            {t('pricing.addType')}
+          </Button>
+        }
+      >
         {types.isError && (
+          <Alert severity="error">
+            {t('reservationCreate.inventoryError')}
+          </Alert>
+        )}
+        {types.isLoading && (
+          <Typography role="status">{t('common.loading')}</Typography>
+        )}
+        {types.data?.length === 0 && (
+          <Typography color="text.secondary">{t('pricing.noTypes')}</Typography>
+        )}
+        {!!types.data?.length && (
+          <List disablePadding aria-label={t('settings.accommodationsTab')}>
+            {types.data.map((item) => (
+              <ListItem key={item.id} disablePadding divider>
+                <ListItemButton
+                  onClick={() => setSelection({ mode: 'edit', id: item.id })}
+                >
+                  <ListItemText
+                    primary={item.name}
+                    secondary={t(`pricing.${item.inventoryMode}`)}
+                    slotProps={{ primary: { sx: uiStyles.strongWrappedText } }}
+                  />
+                </ListItemButton>
+                <Switch
+                  checked={item.enabled}
+                  disabled={typeStatus.isLoading || types.isFetching}
+                  slotProps={{
+                    input: {
+                      'aria-label': t('pricing.enableType', {
+                        name: item.name,
+                      }),
+                    },
+                  }}
+                  onChange={(_, enabled) => {
+                    void updateType({ id: item.id, body: { enabled } })
+                  }}
+                />
+              </ListItem>
+            ))}
+          </List>
+        )}
+        {typeStatus.isError && (
           <Alert severity="error">{t('settings.saveError')}</Alert>
         )}
-        <TextField
-          select
-          label={t('reservationCreate.type')}
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-        >
-          <MenuItem value="">{t('pricing.addType')}</MenuItem>
-          {types.data?.map((item) => (
-            <MenuItem key={item.id} value={item.id}>
-              {item.name}
-            </MenuItem>
-          ))}
-        </TextField>
       </SectionCard>
-      <TypePricingEditor
-        key={selected}
-        type={type}
-        profile={profile}
-        onSaved={setSelected}
-      />
-      {type && <UnitSettings key={type.id} type={type} />}
     </Stack>
   )
 }
@@ -119,15 +194,15 @@ function TypePricingEditor({
 }: {
   type?: AccommodationType
   profile: CampingProfile
-  onSaved: (id: string) => void
+  onSaved: (type: AccommodationType) => void
 }) {
   const { t, i18n } = useTranslation()
+  const editorId = useId()
   const [name, setName] = useState(type?.name ?? '')
   const [inventoryMode, setMode] = useState<AccommodationType['inventoryMode']>(
     type?.inventoryMode ?? 'individual',
   )
   const [capacity, setCapacity] = useState(type?.maxOccupancy ?? 1)
-  const [enabled, setEnabled] = useState(type?.enabled ?? true)
   const [pricing, setPricing] = useState(() => initialPricing(type, profile))
   const [error, setError] = useState(false)
   const [create, creating] = useCreateAccommodationTypeMutation()
@@ -144,8 +219,10 @@ function TypePricingEditor({
   ) => (
     <MoneyField
       label={label}
+      fullWidth
       valueMinor={value}
       {...moneyProps}
+      showCurrencyInInput
       onChangeMinor={(value) => change(value === '' ? 0 : value)}
     />
   )
@@ -162,14 +239,13 @@ function TypePricingEditor({
       inventoryMode,
       maxOccupancy: inventoryMode === 'unlimited' ? null : capacity,
       baseNightlyPriceMinor: pricing.baseNightlyPriceMinor,
-      enabled,
       pricing: settings,
     }
     try {
       const result = type
         ? await update({ id: type.id, body }).unwrap()
-        : await create(body).unwrap()
-      onSaved(result.id)
+        : await create({ ...body, enabled: true }).unwrap()
+      onSaved(result)
     } catch {
       setError(true)
     }
@@ -201,8 +277,17 @@ function TypePricingEditor({
                 mode === 'unlimited'
               ) {
                 setMode(mode)
-                if (mode === 'shared')
-                  setPricing({ ...pricing, basis: 'per_bed' })
+                if (mode === 'shared' || inventoryMode === 'shared' || !type) {
+                  setPricing({
+                    ...pricing,
+                    basis:
+                      mode === 'shared'
+                        ? 'per_bed'
+                        : mode === 'unlimited'
+                          ? 'per_person'
+                          : 'per_unit',
+                  })
+                }
               }
             }}
           >
@@ -221,12 +306,6 @@ function TypePricingEditor({
             />
           )}
         </Box>
-        <FormControlLabel
-          label={t('pricing.enabled')}
-          control={
-            <Checkbox checked={enabled} onChange={(_e, v) => setEnabled(v)} />
-          }
-        />
         <Box sx={uiStyles.formGrid}>
           <TextField
             select
@@ -257,261 +336,322 @@ function TypePricingEditor({
               setPricing({ ...pricing, baseNightlyPriceMinor: value }),
             )}
         </Box>
-        {pricing.basis !== 'per_bed' &&
+        {pricing.basis === 'per_unit' &&
           categories.map((category) => (
             <Stack key={category} {...uiProps.stackSmall}>
               <Typography>{t(`checkIn.${category}`)}</Typography>
-              {pricing.basis === 'per_person' ? (
-                money(t('pricing.rate'), pricing.rates[category], (value) =>
-                  setPricing({
-                    ...pricing,
-                    rates: { ...pricing.rates, [category]: value },
-                  }),
-                )
-              ) : (
-                <Box sx={uiStyles.formGrid}>
-                  <TextField
-                    type="number"
-                    label={t('pricing.included')}
-                    value={pricing.includedOccupancy[category]}
-                    onChange={(e) =>
-                      setPricing({
-                        ...pricing,
-                        includedOccupancy: {
-                          ...pricing.includedOccupancy,
-                          [category]: Number(e.target.value),
-                        },
-                      })
-                    }
-                  />
-                  {money(
-                    t('pricing.extra'),
-                    pricing.extraPersonRates[category],
-                    (value) =>
-                      setPricing({
-                        ...pricing,
-                        extraPersonRates: {
-                          ...pricing.extraPersonRates,
-                          [category]: value,
-                        },
-                      }),
-                  )}
-                </Box>
-              )}
-            </Stack>
-          ))}
-        {money(t('pricing.pets'), pricing.petNightlyPriceMinor, (value) =>
-          setPricing({ ...pricing, petNightlyPriceMinor: value }),
-        )}
-        <Typography variant="h6">{t('pricing.weekdays')}</Typography>
-        {pricing.weekdays.map((override, index) => {
-          const rate = {
-            baseNightlyPriceMinor: pricing.baseNightlyPriceMinor,
-            rates: pricing.rates,
-            extraPersonRates: pricing.extraPersonRates,
-            petNightlyPriceMinor: pricing.petNightlyPriceMinor,
-            ...override.rates,
-          }
-          const setRate = (next: typeof override.rates) =>
-            setPricing({
-              ...pricing,
-              weekdays: pricing.weekdays.map((d, i) =>
-                i === index ? { ...d, rates: { ...d.rates, ...next } } : d,
-              ),
-            })
-          return (
-            <Stack key={override.day} {...uiProps.stackSmall}>
-              <Typography>
-                {new Intl.DateTimeFormat(i18n.language, {
-                  weekday: 'long',
-                  timeZone: 'UTC',
-                }).format(new Date(Date.UTC(2026, 10, 1 + override.day)))}
-              </Typography>
               <Box sx={uiStyles.formGrid}>
-                {pricing.basis !== 'per_person' &&
-                  money(t('pricing.base'), rate.baseNightlyPriceMinor, (v) =>
-                    setRate({ baseNightlyPriceMinor: v }),
-                  )}
-                {pricing.basis !== 'per_bed' &&
-                  categories.map((c) => (
-                    <Box key={c}>
-                      {money(
-                        `${t(`checkIn.${c}`)} · ${t(pricing.basis === 'per_person' ? 'pricing.rate' : 'pricing.extra')}`,
-                        pricing.basis === 'per_person'
-                          ? rate.rates[c]
-                          : rate.extraPersonRates[c],
-                        (v) =>
-                          setRate(
-                            pricing.basis === 'per_person'
-                              ? { rates: { ...rate.rates, [c]: v } }
-                              : {
-                                  extraPersonRates: {
-                                    ...rate.extraPersonRates,
-                                    [c]: v,
-                                  },
-                                },
-                          ),
-                      )}
-                    </Box>
-                  ))}
-                {money(t('pricing.pets'), rate.petNightlyPriceMinor, (v) =>
-                  setRate({ petNightlyPriceMinor: v }),
-                )}
-              </Box>
-              <Button
-                onClick={() =>
-                  setPricing({
-                    ...pricing,
-                    weekdays: pricing.weekdays.filter((_, i) => i !== index),
-                  })
-                }
-              >
-                {t('pricing.remove')}
-              </Button>
-            </Stack>
-          )
-        })}
-        <TextField
-          select
-          label={t('pricing.addDay')}
-          value=""
-          onChange={(e) =>
-            setPricing({
-              ...pricing,
-              weekdays: [
-                ...pricing.weekdays,
-                { day: Number(e.target.value), rates: {} },
-              ],
-            })
-          }
-        >
-          {[0, 1, 2, 3, 4, 5, 6]
-            .filter((day) => !pricing.weekdays.some((d) => d.day === day))
-            .map((day) => (
-              <MenuItem key={day} value={day}>
-                {new Intl.DateTimeFormat(i18n.language, {
-                  weekday: 'long',
-                  timeZone: 'UTC',
-                }).format(new Date(Date.UTC(2026, 10, 1 + day)))}
-              </MenuItem>
-            ))}
-        </TextField>
-        <Typography variant="h6">{t('pricing.discounts')}</Typography>
-        {pricing.discounts.map((rule, index) => (
-          <Stack key={index} {...uiProps.stackSmall}>
-            <TextField
-              type="number"
-              label={t('pricing.blockNights')}
-              value={rule.blockNights}
-              onChange={(e) =>
-                setDiscount(index, {
-                  ...rule,
-                  blockNights: Number(e.target.value),
-                })
-              }
-            />
-            <FormControlLabel
-              label={t('pricing.repeat')}
-              control={
-                <Checkbox
-                  checked={rule.repeat}
-                  onChange={(_e, v) =>
-                    setDiscount(index, { ...rule, repeat: v })
+                <TextField
+                  type="number"
+                  label={t('pricing.included')}
+                  value={pricing.includedOccupancy[category]}
+                  onChange={(e) =>
+                    setPricing({
+                      ...pricing,
+                      includedOccupancy: {
+                        ...pricing.includedOccupancy,
+                        [category]: Number(e.target.value),
+                      },
+                    })
                   }
                 />
-              }
-            />
-            <TextField
-              select
-              label={t('pricing.benefit')}
-              value={rule.benefit.type}
-              onChange={(e) => {
-                const type = e.target.value
-                if (
-                  type === 'PERCENTAGE' ||
-                  type === 'FIXED_AMOUNT' ||
-                  type === 'FIXED_PRICE' ||
-                  type === 'FREE_NIGHTS'
-                )
-                  setDiscount(index, {
-                    ...rule,
-                    benefit: { type, value: type === 'FREE_NIGHTS' ? 1 : 0 },
-                  })
-              }}
+                {money(
+                  t('pricing.extra'),
+                  pricing.extraPersonRates[category],
+                  (value) =>
+                    setPricing({
+                      ...pricing,
+                      extraPersonRates: {
+                        ...pricing.extraPersonRates,
+                        [category]: value,
+                      },
+                    }),
+                )}
+              </Box>
+            </Stack>
+          ))}
+        <Box sx={uiStyles.formGrid}>
+          {pricing.basis === 'per_person' &&
+            categories.map((category) => (
+              <Box key={category}>
+                {money(
+                  t('pricing.nightlyCategoryRate', {
+                    category: t(`checkIn.${category}`),
+                  }),
+                  pricing.rates[category],
+                  (value) =>
+                    setPricing({
+                      ...pricing,
+                      rates: { ...pricing.rates, [category]: value },
+                    }),
+                )}
+              </Box>
+            ))}
+          {money(t('pricing.pets'), pricing.petNightlyPriceMinor, (value) =>
+            setPricing({ ...pricing, petNightlyPriceMinor: value }),
+          )}
+        </Box>
+        <Box>
+          <Accordion disableGutters>
+            <AccordionSummary
+              expandIcon={<LucideIcon icon={ChevronDown} />}
+              id={`${editorId}-weekdays`}
+              aria-controls={`${editorId}-weekdays-content`}
             >
-              {(
-                [
-                  'PERCENTAGE',
-                  'FIXED_AMOUNT',
-                  'FIXED_PRICE',
-                  'FREE_NIGHTS',
-                ] as const
-              ).map((type) => (
-                <MenuItem key={type} value={type}>
-                  {t(`pricing.${type}`)}
-                </MenuItem>
-              ))}
-            </TextField>
-            {rule.benefit.type === 'FIXED_AMOUNT' ||
-            rule.benefit.type === 'FIXED_PRICE' ? (
-              money(t('pricing.value'), rule.benefit.value, (v) =>
-                setDiscount(index, {
-                  ...rule,
-                  benefit: { ...rule.benefit, value: v },
-                }),
-              )
-            ) : (
-              <TextField
-                type="number"
-                label={t('pricing.value')}
-                value={
-                  rule.benefit.type === 'PERCENTAGE'
-                    ? rule.benefit.value / 100
-                    : rule.benefit.value
-                }
-                onChange={(e) =>
-                  setDiscount(index, {
-                    ...rule,
-                    benefit: {
-                      ...rule.benefit,
-                      value: Math.round(
-                        Number(e.target.value) *
-                          (rule.benefit.type === 'PERCENTAGE' ? 100 : 1),
+              <Typography component="span" variant="h3">
+                {t('pricing.weekdays')}
+                {pricing.weekdays.length > 0 && ` (${pricing.weekdays.length})`}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack {...uiProps.stackForm}>
+                {pricing.weekdays.map((override, index) => {
+                  const rate = {
+                    baseNightlyPriceMinor: pricing.baseNightlyPriceMinor,
+                    rates: pricing.rates,
+                    extraPersonRates: pricing.extraPersonRates,
+                    petNightlyPriceMinor: pricing.petNightlyPriceMinor,
+                    ...override.rates,
+                  }
+                  const setRate = (next: typeof override.rates) =>
+                    setPricing({
+                      ...pricing,
+                      weekdays: pricing.weekdays.map((d, i) =>
+                        i === index
+                          ? { ...d, rates: { ...d.rates, ...next } }
+                          : d,
                       ),
-                    },
-                  })
-                }
-              />
-            )}
-            <Button
-              onClick={() =>
-                setPricing({
-                  ...pricing,
-                  discounts: pricing.discounts.filter((_, i) => i !== index),
-                })
-              }
+                    })
+                  return (
+                    <Stack key={override.day} {...uiProps.stackSmall}>
+                      <Typography>
+                        {new Intl.DateTimeFormat(i18n.language, {
+                          weekday: 'long',
+                          timeZone: 'UTC',
+                        }).format(
+                          new Date(Date.UTC(2026, 10, 1 + override.day)),
+                        )}
+                      </Typography>
+                      <Box sx={uiStyles.formGrid}>
+                        {pricing.basis !== 'per_person' &&
+                          money(
+                            t('pricing.base'),
+                            rate.baseNightlyPriceMinor,
+                            (v) => setRate({ baseNightlyPriceMinor: v }),
+                          )}
+                        {pricing.basis !== 'per_bed' &&
+                          categories.map((c) => (
+                            <Box key={c}>
+                              {money(
+                                `${t(`checkIn.${c}`)} · ${t(pricing.basis === 'per_person' ? 'pricing.rate' : 'pricing.extra')}`,
+                                pricing.basis === 'per_person'
+                                  ? rate.rates[c]
+                                  : rate.extraPersonRates[c],
+                                (v) =>
+                                  setRate(
+                                    pricing.basis === 'per_person'
+                                      ? { rates: { ...rate.rates, [c]: v } }
+                                      : {
+                                          extraPersonRates: {
+                                            ...rate.extraPersonRates,
+                                            [c]: v,
+                                          },
+                                        },
+                                  ),
+                              )}
+                            </Box>
+                          ))}
+                        {money(
+                          t('pricing.pets'),
+                          rate.petNightlyPriceMinor,
+                          (v) => setRate({ petNightlyPriceMinor: v }),
+                        )}
+                      </Box>
+                      <Button
+                        onClick={() =>
+                          setPricing({
+                            ...pricing,
+                            weekdays: pricing.weekdays.filter(
+                              (_, i) => i !== index,
+                            ),
+                          })
+                        }
+                      >
+                        {t('pricing.remove')}
+                      </Button>
+                    </Stack>
+                  )
+                })}
+                <TextField
+                  select
+                  label={t('pricing.addDay')}
+                  value=""
+                  onChange={(e) =>
+                    setPricing({
+                      ...pricing,
+                      weekdays: [
+                        ...pricing.weekdays,
+                        { day: Number(e.target.value), rates: {} },
+                      ],
+                    })
+                  }
+                >
+                  {[0, 1, 2, 3, 4, 5, 6]
+                    .filter(
+                      (day) => !pricing.weekdays.some((d) => d.day === day),
+                    )
+                    .map((day) => (
+                      <MenuItem key={day} value={day}>
+                        {new Intl.DateTimeFormat(i18n.language, {
+                          weekday: 'long',
+                          timeZone: 'UTC',
+                        }).format(new Date(Date.UTC(2026, 10, 1 + day)))}
+                      </MenuItem>
+                    ))}
+                </TextField>
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion disableGutters>
+            <AccordionSummary
+              expandIcon={<LucideIcon icon={ChevronDown} />}
+              id={`${editorId}-discounts`}
+              aria-controls={`${editorId}-discounts-content`}
             >
-              {t('pricing.remove')}
-            </Button>
-          </Stack>
-        ))}
-        <Button
-          onClick={() =>
-            setPricing({
-              ...pricing,
-              discounts: [
-                ...pricing.discounts,
-                {
-                  blockNights: 7,
-                  repeat: true,
-                  benefit: { type: 'PERCENTAGE', value: 0 },
-                },
-              ],
-            })
-          }
-        >
-          {t('pricing.addDiscount')}
-        </Button>
+              <Typography component="span" variant="h3">
+                {t('pricing.discounts')}
+                {pricing.discounts.length > 0 &&
+                  ` (${pricing.discounts.length})`}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack {...uiProps.stackForm}>
+                {pricing.discounts.map((rule, index) => (
+                  <Stack key={index} {...uiProps.stackSmall}>
+                    <TextField
+                      type="number"
+                      label={t('pricing.blockNights')}
+                      value={rule.blockNights}
+                      onChange={(e) =>
+                        setDiscount(index, {
+                          ...rule,
+                          blockNights: Number(e.target.value),
+                        })
+                      }
+                    />
+                    <FormControlLabel
+                      label={t('pricing.repeat')}
+                      control={
+                        <Checkbox
+                          checked={rule.repeat}
+                          onChange={(_e, v) =>
+                            setDiscount(index, { ...rule, repeat: v })
+                          }
+                        />
+                      }
+                    />
+                    <TextField
+                      select
+                      label={t('pricing.benefit')}
+                      value={rule.benefit.type}
+                      onChange={(e) => {
+                        const type = e.target.value
+                        if (
+                          type === 'PERCENTAGE' ||
+                          type === 'FIXED_AMOUNT' ||
+                          type === 'FIXED_PRICE' ||
+                          type === 'FREE_NIGHTS'
+                        )
+                          setDiscount(index, {
+                            ...rule,
+                            benefit: {
+                              type,
+                              value: type === 'FREE_NIGHTS' ? 1 : 0,
+                            },
+                          })
+                      }}
+                    >
+                      {(
+                        [
+                          'PERCENTAGE',
+                          'FIXED_AMOUNT',
+                          'FIXED_PRICE',
+                          'FREE_NIGHTS',
+                        ] as const
+                      ).map((type) => (
+                        <MenuItem key={type} value={type}>
+                          {t(`pricing.${type}`)}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    {rule.benefit.type === 'FIXED_AMOUNT' ||
+                    rule.benefit.type === 'FIXED_PRICE' ? (
+                      money(t('pricing.value'), rule.benefit.value, (v) =>
+                        setDiscount(index, {
+                          ...rule,
+                          benefit: { ...rule.benefit, value: v },
+                        }),
+                      )
+                    ) : (
+                      <TextField
+                        type="number"
+                        label={t('pricing.value')}
+                        value={
+                          rule.benefit.type === 'PERCENTAGE'
+                            ? rule.benefit.value / 100
+                            : rule.benefit.value
+                        }
+                        onChange={(e) =>
+                          setDiscount(index, {
+                            ...rule,
+                            benefit: {
+                              ...rule.benefit,
+                              value: Math.round(
+                                Number(e.target.value) *
+                                  (rule.benefit.type === 'PERCENTAGE'
+                                    ? 100
+                                    : 1),
+                              ),
+                            },
+                          })
+                        }
+                      />
+                    )}
+                    <Button
+                      onClick={() =>
+                        setPricing({
+                          ...pricing,
+                          discounts: pricing.discounts.filter(
+                            (_, i) => i !== index,
+                          ),
+                        })
+                      }
+                    >
+                      {t('pricing.remove')}
+                    </Button>
+                  </Stack>
+                ))}
+                <Button
+                  onClick={() =>
+                    setPricing({
+                      ...pricing,
+                      discounts: [
+                        ...pricing.discounts,
+                        {
+                          blockNights: 7,
+                          repeat: true,
+                          benefit: { type: 'PERCENTAGE', value: 0 },
+                        },
+                      ],
+                    })
+                  }
+                >
+                  {t('pricing.addDiscount')}
+                </Button>
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+        </Box>
         {error && <Alert severity="error">{t('settings.saveError')}</Alert>}
         <Button
           variant="contained"
@@ -526,22 +666,48 @@ function TypePricingEditor({
 }
 function UnitSettings({ type }: { type: AccommodationType }) {
   const { t } = useTranslation()
-  const units = useAccommodationUnitsQuery(undefined)
+  const sectionId = useId()
+  const [expandedUnit, setExpandedUnit] = useState<string | null>(null)
+  const units = useAccommodationUnitsQuery({ typeId: type.id })
   const [name, setName] = useState('')
   const [capacity, setCapacity] = useState(type.maxOccupancy ?? 1)
   const [create, status] = useCreateAccommodationUnitMutation()
-  if (type.inventoryMode === 'unlimited') return null
   return (
     <SectionCard title={t('pricing.units')}>
-      {units.data
-        ?.filter((u) => u.typeId === type.id)
-        .map((unit) => (
-          <UnitEditor
-            key={`${unit.id}:${unit.updatedAt}`}
-            unit={unit}
-            shared={type.inventoryMode === 'shared'}
-          />
+      {units.isLoading && (
+        <Typography role="status">{t('common.loading')}</Typography>
+      )}
+      <Box>
+        {units.data?.map((unit) => (
+          <Accordion
+            key={unit.id}
+            disableGutters
+            expanded={expandedUnit === unit.id}
+            onChange={(_, expanded) =>
+              setExpandedUnit(expanded ? unit.id : null)
+            }
+            slotProps={{ transition: { mountOnEnter: true } }}
+          >
+            <AccordionSummary
+              expandIcon={<LucideIcon icon={ChevronDown} />}
+              id={`${sectionId}-${unit.id}`}
+              aria-controls={`${sectionId}-${unit.id}-content`}
+            >
+              <Typography component="span" variant="h3">
+                {unit.name}
+                {!unit.enabled && ` · ${t('pricing.inactive')}`}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <UnitEditor
+                key={unit.updatedAt}
+                unit={unit}
+                shared={type.inventoryMode === 'shared'}
+              />
+            </AccordionDetails>
+          </Accordion>
         ))}
+      </Box>
       <TextField
         label={t('pricing.name')}
         value={name}
@@ -569,7 +735,7 @@ function UnitSettings({ type }: { type: AccommodationType }) {
       >
         {t('pricing.addUnit')}
       </Button>
-      {status.isError && (
+      {(units.isError || status.isError) && (
         <Alert severity="error">{t('settings.saveError')}</Alert>
       )}
     </SectionCard>
@@ -638,41 +804,39 @@ function UnitEditor({
   const [enabled, setEnabled] = useState(unit.enabled)
   const [update, status] = useUpdateAccommodationUnitMutation()
   return (
-    <Box sx={uiStyles.sectionForm}>
-      <Stack {...uiProps.stackForm}>
-        <TextField
-          label={t('pricing.name')}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <TextField
-          type="number"
-          label={t('pricing.capacity')}
-          value={capacity}
-          onChange={(e) => setCapacity(Number(e.target.value))}
-        />
-        <FormControlLabel
-          label={t('pricing.enabled')}
-          control={
-            <Checkbox checked={enabled} onChange={(_e, v) => setEnabled(v)} />
-          }
-        />
-        <Button
-          disabled={status.isLoading || !name.trim()}
-          onClick={() => {
-            void update({
-              id: unit.id,
-              body: { name, maxOccupancy: capacity, enabled },
-            })
-          }}
-        >
-          {t('common.save')}
-        </Button>
-        {status.isError && (
-          <Alert severity="error">{t('settings.saveError')}</Alert>
-        )}
-        {shared && <BedSettings unitId={unit.id} />}
-      </Stack>
-    </Box>
+    <Stack {...uiProps.stackForm}>
+      <TextField
+        label={t('pricing.name')}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <TextField
+        type="number"
+        label={t('pricing.capacity')}
+        value={capacity}
+        onChange={(e) => setCapacity(Number(e.target.value))}
+      />
+      <FormControlLabel
+        label={t('pricing.enabled')}
+        control={
+          <Checkbox checked={enabled} onChange={(_e, v) => setEnabled(v)} />
+        }
+      />
+      <Button
+        disabled={status.isLoading || !name.trim()}
+        onClick={() => {
+          void update({
+            id: unit.id,
+            body: { name, maxOccupancy: capacity, enabled },
+          })
+        }}
+      >
+        {t('common.save')}
+      </Button>
+      {status.isError && (
+        <Alert severity="error">{t('settings.saveError')}</Alert>
+      )}
+      {shared && <BedSettings unitId={unit.id} />}
+    </Stack>
   )
 }
