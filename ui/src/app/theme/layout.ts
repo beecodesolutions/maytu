@@ -31,6 +31,10 @@ export const uiProps = {
   stackSmall: { spacing: 1 },
   stackSection: { spacing: 3 },
   stackForm: { spacing: 2.5 },
+  selectWithEmptyOption: {
+    select: { displayEmpty: true },
+    inputLabel: { shrink: true },
+  },
   fullHeightWidget: { height: '100%' },
   inlineProgress: { size: 20 },
   navigationRow: { direction: 'row', spacing: { md: 1 } },

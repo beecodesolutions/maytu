@@ -343,6 +343,55 @@ export const uiStyles = {
     fontWeight: 800,
     mt: 0.5,
   } satisfies SxProps<Theme>,
+  reservationOfferFilters: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: { xs: 1, sm: 2 },
+  } satisfies SxProps<Theme>,
+  reservationOfferGroups: {
+    gap: 2,
+  } satisfies SxProps<Theme>,
+  reservationOfferGroup: {
+    display: 'grid',
+    gap: 1,
+  } satisfies SxProps<Theme>,
+  reservationOfferRow: {
+    m: 0,
+    p: 1,
+    alignItems: 'flex-start',
+    border: 1,
+    borderColor: 'divider',
+    borderRadius: 2,
+    '&:hover': { bgcolor: 'action.hover' },
+    '&:has(.Mui-checked)': {
+      bgcolor: 'action.selected',
+      borderColor: 'primary.main',
+    },
+    '&:has(.Mui-focusVisible)': {
+      outline: '2px solid',
+      outlineColor: 'primary.main',
+      outlineOffset: 2,
+    },
+    '& .MuiRadio-root': {
+      p: 0.5,
+      mr: 0.75,
+    },
+  } satisfies SxProps<Theme>,
+  reservationOfferDetails: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    alignItems: 'baseline',
+    columnGap: 1,
+    flex: 1,
+    minWidth: 0,
+    py: 0.5,
+    overflowWrap: 'anywhere',
+  } satisfies SxProps<Theme>,
+  reservationOfferDescription: {
+    gridColumn: '1 / -1',
+    display: 'grid',
+    gap: 0.25,
+  } satisfies SxProps<Theme>,
   reservationCreateDialogDialogContent: {
     outline: 'none',
   } satisfies SxProps<Theme>,
@@ -564,6 +613,10 @@ export const uiStyles = {
     fontWeight: 700,
   } satisfies SxProps<Theme>,
   alignCenter: { alignItems: 'center' } satisfies SxProps<Theme>,
+  inlineWarning: {
+    alignItems: 'center',
+    '& svg': { flexShrink: 0 },
+  } satisfies SxProps<Theme>,
   liveOccupancyCardBox: {
     display: 'grid',
     gridTemplateColumns: {

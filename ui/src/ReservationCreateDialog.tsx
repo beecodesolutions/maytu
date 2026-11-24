@@ -26,6 +26,8 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
+import { BedDouble, Tent } from 'lucide-react'
+import LucideIcon from './components/LucideIcon'
 import {
   reservationSearchSchema,
   reservationCreateSchema,
@@ -131,6 +133,25 @@ export default function ReservationCreateDialog({
     nightsDraft !== null &&
     departureForNights(checkInDate, nightsDraft) === null
   const selectedType = types.find((type) => type.id === typeId)
+  const visibleOffers = (offers ?? []).filter(
+    ({ input }) =>
+      (!typeFilter || input.accommodationTypeId === typeFilter) &&
+      (!unitFilter || input.unitId === unitFilter),
+  )
+  const offerGroups = [
+    {
+      title: 'reservationCreate.campingOptions' as const,
+      kind: 'camping' as const,
+      icon: Tent,
+      offers: visibleOffers.filter(({ input }) => !input.unitId),
+    },
+    {
+      title: 'reservationCreate.roomOptions' as const,
+      kind: 'individual' as const,
+      icon: BedDouble,
+      offers: visibleOffers.filter(({ input }) => input.unitId),
+    },
+  ].filter((group) => group.offers.length > 0)
   const locked = state.attempt !== null
   const saving = state.phase === 'saving'
   const loading = typesQuery.isLoading || unitsQuery.isLoading
@@ -404,94 +425,150 @@ export default function ReservationCreateDialog({
             )}
             {step === 1 && offers && (
               <Stack {...uiProps.stackForm}>
-                <TextField
-                  select
-                  fullWidth
-                  label={t('reservationCreate.type')}
-                  value={typeFilter}
-                  onChange={(event) => {
-                    setTypeFilter(event.target.value)
-                    setUnitFilter('')
-                  }}
-                >
-                  <MenuItem value="">{t('reservationCreate.all')}</MenuItem>
-                  {usableTypes.map((type) => (
-                    <MenuItem key={type.id} value={type.id}>
-                      {type.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  select
-                  fullWidth
-                  label={t('reservationCreate.unit')}
-                  value={unitFilter}
-                  onChange={(event) => setUnitFilter(event.target.value)}
-                >
-                  <MenuItem value="">{t('reservationCreate.all')}</MenuItem>
-                  {units
-                    .filter(
-                      (unit) =>
-                        unit.enabled &&
-                        (!typeFilter || unit.typeId === typeFilter),
-                    )
-                    .map((unit) => (
-                      <MenuItem key={unit.id} value={unit.id}>
-                        {unit.name}
+                <Box sx={uiStyles.reservationOfferFilters}>
+                  <TextField
+                    select
+                    fullWidth
+                    label={t('reservationCreate.type')}
+                    slotProps={uiProps.selectWithEmptyOption}
+                    value={typeFilter}
+                    onChange={(event) => {
+                      setTypeFilter(event.target.value)
+                      setUnitFilter('')
+                    }}
+                  >
+                    <MenuItem value="">{t('reservationCreate.all')}</MenuItem>
+                    {usableTypes.map((type) => (
+                      <MenuItem key={type.id} value={type.id}>
+                        {type.name}
                       </MenuItem>
                     ))}
-                </TextField>
+                  </TextField>
+                  <TextField
+                    select
+                    fullWidth
+                    label={t('reservationCreate.unit')}
+                    slotProps={uiProps.selectWithEmptyOption}
+                    value={unitFilter}
+                    onChange={(event) => setUnitFilter(event.target.value)}
+                  >
+                    <MenuItem value="">{t('reservationCreate.all')}</MenuItem>
+                    {units
+                      .filter(
+                        (unit) =>
+                          unit.enabled &&
+                          (!typeFilter || unit.typeId === typeFilter),
+                      )
+                      .map((unit) => (
+                        <MenuItem key={unit.id} value={unit.id}>
+                          {unit.name}
+                        </MenuItem>
+                      ))}
+                  </TextField>
+                </Box>
+                {offers.length > 0 && offerGroups.length === 0 && (
+                  <Alert severity="info">
+                    {t('reservationCreate.noOffers')}
+                  </Alert>
+                )}
                 <RadioGroup
                   aria-label={t('reservationCreate.step2')}
+                  sx={uiStyles.reservationOfferGroups}
                   value={
                     selected
                       ? `${selected.input.accommodationTypeId}:${selected.input.unitId ?? ''}`
                       : ''
                   }
                 >
-                  {offers
-                    .filter(
-                      (offer) =>
-                        (!typeFilter ||
-                          offer.input.accommodationTypeId === typeFilter) &&
-                        (!unitFilter || offer.input.unitId === unitFilter),
-                    )
-                    .map((offer) => {
-                      const key = `${offer.input.accommodationTypeId}:${offer.input.unitId ?? ''}`
-                      return (
-                        <FormControlLabel
-                          key={key}
-                          value={key}
-                          control={<Radio />}
-                          label={
-                            <Stack {...uiProps.stackSmall}>
-                              <Typography>
-                                {offer.accommodationName} ·{' '}
-                                {formatMoney(
-                                  offer.priceSnapshot.totalMinor,
-                                  offer.priceSnapshot.currency,
-                                  i18n.language,
-                                )}
-                              </Typography>
-                              <ReservationOfferCapacity offer={offer} />
-                            </Stack>
-                          }
-                          onChange={() => {
-                            setSelected(offer)
-                            setValue(
-                              'accommodationTypeId',
-                              offer.input.accommodationTypeId,
-                            )
-                            setValue('unitId', offer.input.unitId ?? '')
-                            if (offer !== selected) {
-                              setValue('capacityOverrideReason', '')
-                              clearErrors('capacityOverrideReason')
+                  {offerGroups.map((group) => (
+                    <Box key={group.title} sx={uiStyles.reservationOfferGroup}>
+                      {offerGroups.length > 1 && (
+                        <Typography variant="h3">
+                          <Stack
+                            component="span"
+                            {...uiProps.rowSmall}
+                            sx={uiStyles.alignCenter}
+                          >
+                            <LucideIcon
+                              icon={group.icon}
+                              aria-hidden="true"
+                              focusable="false"
+                              sx={uiStyles.accommodationIdentityLucideIcon(
+                                group.kind,
+                              )}
+                            />
+                            <span>{t(group.title)}</span>
+                          </Stack>
+                        </Typography>
+                      )}
+                      {group.offers.map((offer) => {
+                        const { accommodationTypeId, unitId } = offer.input
+                        const key = `${accommodationTypeId}:${unitId ?? ''}`
+                        const typeName = types.find(
+                          ({ id }) => id === accommodationTypeId,
+                        )?.name
+                        const unitName = units.find(
+                          ({ id }) => id === unitId,
+                        )?.name
+                        return (
+                          <FormControlLabel
+                            key={key}
+                            value={key}
+                            disableTypography
+                            sx={uiStyles.reservationOfferRow}
+                            control={<Radio size="small" />}
+                            label={
+                              <Box sx={uiStyles.reservationOfferDetails}>
+                                <Typography
+                                  component="span"
+                                  variant="subtitle2"
+                                >
+                                  {unitName ?? offer.accommodationName}
+                                </Typography>
+                                <Typography
+                                  component="span"
+                                  variant="subtitle2"
+                                  sx={uiStyles.tariffBreakdownAmount}
+                                >
+                                  {formatMoney(
+                                    offer.priceSnapshot.totalMinor,
+                                    offer.priceSnapshot.currency,
+                                    i18n.language,
+                                  )}
+                                </Typography>
+                                <Box sx={uiStyles.reservationOfferDescription}>
+                                  {unitName &&
+                                    typeName &&
+                                    unitName !== typeName && (
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        {typeName}
+                                      </Typography>
+                                    )}
+                                  <ReservationOfferCapacity offer={offer} />
+                                </Box>
+                              </Box>
                             }
-                            changed()
-                          }}
-                        />
-                      )
-                    })}
+                            onChange={() => {
+                              setSelected(offer)
+                              setValue(
+                                'accommodationTypeId',
+                                offer.input.accommodationTypeId,
+                              )
+                              setValue('unitId', offer.input.unitId ?? '')
+                              if (offer !== selected) {
+                                setValue('capacityOverrideReason', '')
+                                clearErrors('capacityOverrideReason')
+                              }
+                              changed()
+                            }}
+                          />
+                        )
+                      })}
+                    </Box>
+                  ))}
                 </RadioGroup>
               </Stack>
             )}
