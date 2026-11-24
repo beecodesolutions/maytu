@@ -32,12 +32,12 @@ export default function ReservationReview({
         <Typography variant="overline" color="text.secondary">
           {t('reservationCreate.accommodationLabel')}
         </Typography>
-        <Typography variant="h3">
-          {quote.accommodationName}
-        </Typography>
-        <Typography variant="body1" sx={uiStyles.smallTopGap}>
-          {quote.responsibleName}
-        </Typography>
+        <Typography variant="h3">{quote.accommodationName}</Typography>
+        {quote.responsibleName && (
+          <Typography variant="body1" sx={uiStyles.smallTopGap}>
+            {quote.responsibleName}
+          </Typography>
+        )}
       </Box>
       <Box sx={uiStyles.reservationReviewBox}>
         <Box>

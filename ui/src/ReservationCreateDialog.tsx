@@ -15,7 +15,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   Checkbox,
   FormControlLabel,
   MobileStepper,
@@ -117,6 +116,7 @@ export default function ReservationCreateDialog({
     getFieldState,
     getValues,
     setError,
+    clearErrors,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ReservationFormValues>({
@@ -138,7 +138,7 @@ export default function ReservationCreateDialog({
   const inventoryError = typesQuery.isError || unitsQuery.isError
   const noInventory = !loading && !inventoryError && usableTypes.length === 0
   const quote = state.quote
-  const reviewing = step === 3
+  const reviewing = step === 2 || step === 3
   useEffect(() => {
     if (open) {
       contentRef.current?.scrollTo({ top: 0 })
@@ -155,6 +155,7 @@ export default function ReservationCreateDialog({
     setSelected(null)
     setValue('accommodationTypeId', '')
     setValue('unitId', '')
+    setValue('capacityOverrideReason', '')
     setSearchError(false)
     changed()
   }
@@ -216,28 +217,39 @@ export default function ReservationCreateDialog({
   const errorText = (message?: string) =>
     message ? t(message, { defaultValue: t('validation.invalid') }) : undefined
 
-  const quoteValues = handleSubmit(async (values) => {
-    if (!selectedType || locked) return
+  const quoteValues = async () => {
+    const values = getValues()
+    if (!selected || !selectedType || locked) return
+    clearErrors('capacityOverrideReason')
     const revision = state.revision
+    if ((values.capacityOverrideReason?.length ?? 0) > 500) {
+      setError('capacityOverrideReason', {
+        type: 'validate',
+        message: 'validation.invalid',
+      })
+      return
+    }
     const input = reservationQuoteInput(values, selectedType)
     const unit = units.find((item) => item.id === input.unitId)
     setAccepted(false)
-    setStep(3)
     dispatch({ type: 'quote-start' })
     try {
       const result = await requestQuote(input).unwrap()
-      dispatch({
-        type: 'quote-success',
-        revision,
-        quote: {
-          ...result,
-          input,
-          responsibleName: values.responsibleName,
-          accommodationName: unit
-            ? `${selectedType.name} · ${unit.name}`
-            : selectedType.name,
-        },
-      })
+      const refreshedQuote: CreationQuote = {
+        ...result,
+        input,
+        responsibleName: '',
+        accommodationName: unit
+          ? `${selectedType.name} · ${unit.name}`
+          : selectedType.name,
+      }
+      dispatch({ type: 'quote-success', revision, quote: refreshedQuote })
+      if (
+        result.priceSnapshot.totalMinor === selected.priceSnapshot.totalMinor &&
+        result.priceSnapshot.currency === selected.priceSnapshot.currency
+      ) {
+        setStep(3)
+      }
     } catch (error) {
       for (const name of reservationValidationFields(error))
         setError(name, { type: 'server', message: 'validation.invalid' })
@@ -250,7 +262,7 @@ export default function ReservationCreateDialog({
           : failure.message,
       })
     }
-  })
+  }
 
   const saveAttempt = async (attempt: ReservationCreate) => {
     if (sending.current) return
@@ -271,6 +283,10 @@ export default function ReservationCreateDialog({
       for (const name of reservationValidationFields(error))
         setError(name, { type: 'server', message: 'validation.invalid' })
       const failure = reservationFailure(error)
+      if (!failure.uncertain) {
+        setAccepted(false)
+        setStep(2)
+      }
       dispatch({
         type: 'save-error',
         uncertain: failure.uncertain,
@@ -282,19 +298,16 @@ export default function ReservationCreateDialog({
   }
 
   const saveValues = () =>
-    handleSubmit(
-      async (values) => {
-        if (!quote || !accepted || sending.current) return
-        const attempt = reservationCreateSchema.parse({
-          ...quote.input,
-          ...reservationContact(values),
-          acceptedTotalMinor: quote.priceSnapshot.totalMinor,
-          idempotencyKey: createUuid(),
-        })
-        await saveAttempt(attempt)
-      },
-      () => dispatch({ type: 'change' }),
-    )()
+    handleSubmit(async (values) => {
+      if (!quote || !accepted || sending.current) return
+      const attempt = reservationCreateSchema.parse({
+        ...quote.input,
+        ...reservationContact(values),
+        acceptedTotalMinor: quote.priceSnapshot.totalMinor,
+        idempotencyKey: createUuid(),
+      })
+      await saveAttempt(attempt)
+    })()
 
   const money = (amount: number) =>
     formatMoney(
@@ -334,11 +347,12 @@ export default function ReservationCreateDialog({
             return
           if (step === 0) void search()
           else if (step === 1 && selected) setStep(2)
-          else if (step === 2) void quoteValues(event)
-          else if (step === 3) {
+          else if (step === 2) {
+            if (quote) setStep(3)
+            else void quoteValues()
+          } else if (step === 3) {
             if (state.attempt) void saveAttempt(state.attempt)
             else if (quote && accepted) void saveValues()
-            else if (!quote) void quoteValues(event)
           }
         }}
         sx={uiStyles.formColumn}
@@ -459,6 +473,10 @@ export default function ReservationCreateDialog({
                               offer.input.accommodationTypeId,
                             )
                             setValue('unitId', offer.input.unitId ?? '')
+                            if (offer !== selected) {
+                              setValue('capacityOverrideReason', '')
+                              clearErrors('capacityOverrideReason')
+                            }
                             changed()
                           }}
                         />
@@ -468,16 +486,16 @@ export default function ReservationCreateDialog({
               </Stack>
             )}
 
-            {step === 3 && quoteRequest.isLoading && (
+            {step === 2 && quoteRequest.isLoading && (
               <Typography role="status">{t('checkIn.quoting')}</Typography>
             )}
             {state.error && (
               <Alert severity="error">{errorText(state.error)}</Alert>
             )}
-            {!reviewing && loading && (
+            {!locked && loading && (
               <Typography role="status">{t('common.loading')}</Typography>
             )}
-            {!reviewing && inventoryError && (
+            {!locked && inventoryError && (
               <Alert
                 severity="error"
                 action={
@@ -487,15 +505,21 @@ export default function ReservationCreateDialog({
                 {t('reservationCreate.inventoryError')}
               </Alert>
             )}
-            {!reviewing && noInventory && (
+            {!locked && noInventory && (
               <Alert severity="info">
                 {t('reservationCreate.noInventory')}
               </Alert>
             )}
             <Box
               component="fieldset"
-              hidden={step !== 0 && step !== 2}
-              disabled={locked || loading || inventoryError || noInventory}
+              hidden={step === 1}
+              disabled={
+                locked ||
+                loading ||
+                inventoryError ||
+                noInventory ||
+                quoteRequest.isLoading
+              }
               sx={uiStyles.fieldsetReset}
             >
               <Stack {...uiProps.stackForm}>
@@ -556,26 +580,34 @@ export default function ReservationCreateDialog({
                     </Box>
                   </Stack>
                 </Box>
-                <Box hidden={step !== 2}>
-                  {selected?.capacityMatch === 'INSUFFICIENT' && (
-                    <TextField
-                      fullWidth
-                      label={t('pricing.capacityOverride')}
-                      {...register('capacityOverrideReason')}
+                {step === 2 && selected && (
+                  <Stack {...uiProps.stackForm}>
+                    <ReservationReview
+                      quote={quote ?? selected}
+                      today={todayInTimezone(profile.timezone)}
                     />
-                  )}
+                    {selected.capacityMatch === 'INSUFFICIENT' && (
+                      <TextField
+                        fullWidth
+                        label={t('pricing.capacityOverride')}
+                        error={!!errors.capacityOverrideReason}
+                        helperText={errorText(
+                          errors.capacityOverrideReason?.message,
+                        )}
+                        slotProps={{
+                          htmlInput: register('capacityOverrideReason', {
+                            onChange: () => changed(),
+                          }),
+                        }}
+                      />
+                    )}
+                  </Stack>
+                )}
+                <Box hidden={step !== 3}>
                   <Stack {...uiProps.stackForm}>
                     <Typography>
-                      {selected?.accommodationName} · {checkInDate} →{' '}
+                      {quote?.accommodationName} · {checkInDate} →{' '}
                       {checkOutDate}
-                    </Typography>
-                    <Divider />
-                    <Typography
-                      component="h2"
-                      variant="subtitle1"
-                      sx={uiStyles.reservationCreateDialogTypography}
-                    >
-                      {t('checkIn.responsibleSection')}
                     </Typography>
                     <TextField
                       label={t('checkIn.responsibleName')}
@@ -676,51 +708,18 @@ export default function ReservationCreateDialog({
               </Stack>
             </Box>
             {step === 3 && quote && (
-              <>
-                <ReservationReview
-                  quote={quote}
-                  today={todayInTimezone(profile.timezone)}
-                />
-                {(
-                  [
-                    'nationality',
-                    'document',
-                    'phone',
-                    'email',
-                    'source',
-                    'notes',
-                  ] as const
-                ).map((name) => (
-                  <Box key={name}>
-                    <Typography variant="body2" color="text.secondary">
-                      {t(
-                        name === 'source' ||
-                          name === 'email' ||
-                          name === 'notes'
-                          ? `reservationCreate.${name}`
-                          : `checkIn.${name}`,
-                      )}
-                    </Typography>
-                    <Typography>
-                      {name === 'phone'
-                        ? reservationContact(getValues()).phone || '—'
-                        : getValues(name) || '—'}
-                    </Typography>
-                  </Box>
-                ))}
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={accepted}
-                      disabled={locked}
-                      onChange={(event) => setAccepted(event.target.checked)}
-                    />
-                  }
-                  label={t('reservationCreate.acceptAmount', {
-                    amount: money(quote.priceSnapshot.totalMinor),
-                  })}
-                />
-              </>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={accepted}
+                    disabled={locked}
+                    onChange={(event) => setAccepted(event.target.checked)}
+                  />
+                }
+                label={t('reservationCreate.acceptAmount', {
+                  amount: money(quote.priceSnapshot.totalMinor),
+                })}
+              />
             )}
           </Stack>
         </DialogContent>
@@ -728,7 +727,8 @@ export default function ReservationCreateDialog({
           <Button
             onClick={() => {
               if (step > 0 && !locked) {
-                changed()
+                if (step === 3) setAccepted(false)
+                else changed()
                 setStep(step - 1)
               } else onClose()
             }}
@@ -748,7 +748,7 @@ export default function ReservationCreateDialog({
               invalidNights ||
               isSubmitting ||
               quoteRequest.isLoading ||
-              (!reviewing && (loading || inventoryError || noInventory))
+              (!locked && (loading || inventoryError || noInventory))
             }
           >
             {saving
@@ -764,8 +764,8 @@ export default function ReservationCreateDialog({
                     : t(
                         step === 0
                           ? 'reservationCreate.search'
-                          : step === 3
-                            ? 'reservationCreate.quote'
+                          : step === 2
+                            ? 'reservationCreate.enterDetails'
                             : 'reservationCreate.continue',
                       )}
           </Button>
