@@ -415,11 +415,10 @@ export const uiStyles = {
   } satisfies SxProps<Theme>,
   dateRangeSummary: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, minmax(0, 10rem)) 3.5rem',
+    gridTemplateColumns: 'repeat(2, minmax(0, 10rem)) 4.5rem',
     alignItems: 'start',
     gap: 1.5,
   } satisfies SxProps<Theme>,
-  dateRangeSummaryLabel: { display: 'block' } satisfies SxProps<Theme>,
   dateRangeDateField: {
     minWidth: 0,
     '& .MuiOutlinedInput-input': {

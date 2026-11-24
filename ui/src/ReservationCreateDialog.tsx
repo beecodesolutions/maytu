@@ -631,42 +631,33 @@ export default function ReservationCreateDialog({
                       }
                       onChange={datesChanged}
                       summaryField={
-                        <Box>
-                          <Typography
-                            component="label"
-                            htmlFor="reservation-nights"
-                            variant="subtitle2"
-                            color="primary.main"
-                            sx={uiStyles.dateRangeSummaryLabel}
-                          >
-                            {t('reservationCreate.nightsField')}
-                          </Typography>
-                          <TextField
-                            name="nights"
-                            sx={uiStyles.dateRangeNightsField}
-                            id="reservation-nights"
-                            type="number"
-                            required
-                            fullWidth
-                            value={nightsDraft ?? nights}
-                            onChange={(event) =>
-                              nightsChanged(event.target.value)
-                            }
-                            disabled={locked || !checkInDate}
-                            error={invalidNights}
-                            slotProps={{
-                              htmlInput: {
-                                'aria-describedby': invalidNights
-                                  ? 'reservation-nights-error'
-                                  : undefined,
-                                min: 1,
-                                max: 366,
-                                step: 1,
-                                inputMode: 'numeric',
-                              },
-                            }}
-                          />
-                        </Box>
+                        <TextField
+                          name="nights"
+                          label={t('reservationCreate.nightsField')}
+                          sx={uiStyles.dateRangeNightsField}
+                          id="reservation-nights"
+                          type="number"
+                          required
+                          fullWidth
+                          value={nightsDraft ?? nights}
+                          onChange={(event) =>
+                            nightsChanged(event.target.value)
+                          }
+                          disabled={locked || !checkInDate}
+                          error={invalidNights}
+                          slotProps={{
+                            inputLabel: { shrink: true },
+                            htmlInput: {
+                              'aria-describedby': invalidNights
+                                ? 'reservation-nights-error'
+                                : undefined,
+                              min: 1,
+                              max: 366,
+                              step: 1,
+                              inputMode: 'numeric',
+                            },
+                          }}
+                        />
                       }
                     />
                     {invalidNights && (

@@ -78,36 +78,28 @@ export default function DateRangeCalendar({
           const value = isStart ? startDate : endDate
           const id = `${fieldId}-${name}`
           return editable ? (
-            <Box key={name}>
-              <Typography
-                component="label"
-                htmlFor={id}
-                variant="subtitle2"
-                color="primary.main"
-                sx={uiStyles.dateRangeSummaryLabel}
-              >
-                {t(`dateRange.${name}`)}
-              </Typography>
-              <TextField
-                id={id}
-                type="date"
-                required
-                fullWidth
-                disabled={disabled}
-                error={isStart ? pastStart : invalidEnd}
-                value={value}
-                onChange={(event) => editDate(name, event.target.value)}
-                sx={uiStyles.dateRangeDateField}
-                slotProps={{
-                  htmlInput: {
-                    min: isStart ? minDate : firstDeparture,
-                    max: '9999-12-31',
-                    'aria-describedby':
-                      !isStart && invalidEnd ? `${fieldId}-error` : undefined,
-                  },
-                }}
-              />
-            </Box>
+            <TextField
+              key={name}
+              id={id}
+              label={t(`dateRange.${name}`)}
+              type="date"
+              required
+              fullWidth
+              disabled={disabled}
+              error={isStart ? pastStart : invalidEnd}
+              value={value}
+              onChange={(event) => editDate(name, event.target.value)}
+              sx={uiStyles.dateRangeDateField}
+              slotProps={{
+                inputLabel: { shrink: true },
+                htmlInput: {
+                  min: isStart ? minDate : firstDeparture,
+                  max: '9999-12-31',
+                  'aria-describedby':
+                    !isStart && invalidEnd ? `${fieldId}-error` : undefined,
+                },
+              }}
+            />
           ) : (
             <Box key={name} aria-live="polite">
               <Typography variant="subtitle2" color="primary.main">
