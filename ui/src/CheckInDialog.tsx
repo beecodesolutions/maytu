@@ -18,6 +18,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
+import GuestCountFields from './components/GuestCountFields'
 import CountrySelect from './checkIn/CountrySelect'
 import { useCreateStayMutation } from './services/api'
 import {
@@ -222,28 +223,12 @@ export default function CheckInDialog({
                     />
                   </Stack>
                   <Box>
-                    <Box sx={uiStyles.checkInDialogBox4}>
-                      {(['adults', 'children', 'infants', 'pets'] as const).map(
-                        (name) => (
-                          <TextField
-                            key={name}
-                            label={`${t(`checkIn.${name}`)}${ageRanges && name !== 'pets' ? ` (${ageRanges[name].max === null ? `${ageRanges[name].min}+` : `${ageRanges[name].min}–${ageRanges[name].max}`})` : ''}`}
-                            type="number"
-                            required
-                            fullWidth
-                            error={!!errors[name]}
-                            helperText={errorText(errors[name]?.message)}
-                            slotProps={{
-                              htmlInput: {
-                                ...register(name, { valueAsNumber: true }),
-                                min: 0,
-                                step: 1,
-                                inputMode: 'numeric',
-                              },
-                            }}
-                          />
-                        ),
-                      )}
+                    <Box sx={uiStyles.guestCountGrid}>
+                      <GuestCountFields
+                        ageRanges={ageRanges}
+                        register={register}
+                        errors={errors}
+                      />
                     </Box>
                   </Box>
                 </Stack>

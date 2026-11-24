@@ -58,6 +58,12 @@ export const checkoutActionStyles = (theme: Theme) => {
   }
 }
 
+const formColumn = {
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: 0,
+} satisfies SxProps<Theme>
+
 export const uiStyles = {
   sectionCard: (height?: CSSProperties['height']): SxProps<Theme> => ({
     p: { xs: 2, sm: 3 },
@@ -280,10 +286,10 @@ export const uiStyles = {
     maxWidth: 380,
   } satisfies SxProps<Theme>,
   boldText: { fontWeight: 700 } satisfies SxProps<Theme>,
-  formColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: 0,
+  formColumn,
+  reservationCreateDialogForm: {
+    ...formColumn,
+    flex: 1,
   } satisfies SxProps<Theme>,
   fieldsetReset: {
     m: 0,
@@ -296,12 +302,10 @@ export const uiStyles = {
     gridTemplateColumns: 'minmax(140px, 2fr) minmax(0, 3fr)',
     gap: 1,
   } satisfies SxProps<Theme>,
-  checkInDialogBox4: {
+  guestCountGrid: {
     display: 'grid',
-    gridTemplateColumns: {
-      xs: '1fr',
-      sm: 'repeat(2, minmax(0, 1fr))',
-    },
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    maxWidth: '19rem',
     gap: 2,
   } satisfies SxProps<Theme>,
   rowBetween: {
@@ -316,10 +320,6 @@ export const uiStyles = {
     gap: 2,
   } satisfies SxProps<Theme>,
   semiboldText: { fontWeight: 600 } satisfies SxProps<Theme>,
-  reservationReviewStack: {
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  } satisfies SxProps<Theme>,
   tariffBreakdownRow: {
     display: 'grid',
     gridTemplateColumns: 'minmax(0, 1fr) auto',
@@ -345,6 +345,59 @@ export const uiStyles = {
     fontWeight: 800,
     mt: 0.5,
   } satisfies SxProps<Theme>,
+  reservationOfferFilters: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: { xs: 1, sm: 2 },
+  } satisfies SxProps<Theme>,
+  reservationOfferGroups: {
+    gap: 2,
+  } satisfies SxProps<Theme>,
+  reservationOfferGroup: {
+    display: 'grid',
+    gap: 1,
+  } satisfies SxProps<Theme>,
+  reservationOfferRow: {
+    m: 0,
+    p: 1,
+    alignItems: 'flex-start',
+    border: 1,
+    borderColor: 'divider',
+    borderRadius: 2,
+    '&:hover': { bgcolor: 'action.hover' },
+    '&:has(.Mui-checked)': {
+      bgcolor: 'action.selected',
+      borderColor: 'primary.main',
+    },
+    '&:has(.Mui-focusVisible)': {
+      outline: '2px solid',
+      outlineColor: 'primary.main',
+      outlineOffset: 2,
+    },
+    '& .MuiRadio-root': {
+      p: 0.5,
+      mr: 0.75,
+    },
+  } satisfies SxProps<Theme>,
+  reservationOfferDetails: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    alignItems: 'baseline',
+    columnGap: 1,
+    flex: 1,
+    minWidth: 0,
+    py: 0.5,
+    overflowWrap: 'anywhere',
+  } satisfies SxProps<Theme>,
+  reservationOfferDescription: {
+    gridColumn: '1 / -1',
+    display: 'grid',
+    gap: 0.25,
+  } satisfies SxProps<Theme>,
+  reservationCreateDialogPaper: {
+    height: { xs: '100%', sm: '48rem' },
+    overflow: 'hidden',
+  } satisfies SxProps<Theme>,
   reservationCreateDialogDialogContent: {
     outline: 'none',
   } satisfies SxProps<Theme>,
@@ -359,16 +412,46 @@ export const uiStyles = {
     },
     gap: 2,
   } satisfies SxProps<Theme>,
-  reservationCreateDialogBox4: {
-    display: 'grid',
-    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+  reservationStepHeader: {
     gap: 2,
+    p: 0,
+    paddingInlineEnd: 1,
+    border: 0,
+    bgcolor: 'transparent',
+    '& .MuiMobileStepper-dots': { flexShrink: 0 },
+  } satisfies SxProps<Theme>,
+  dateRangeSummary: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 10rem)) 4.5rem',
+    alignItems: 'start',
+    gap: 1.5,
+  } satisfies SxProps<Theme>,
+  dateRangeDateField: {
+    minWidth: 0,
+    '& .MuiOutlinedInput-input': {
+      px: 1,
+      minWidth: 0,
+    },
+  } satisfies SxProps<Theme>,
+  dateRangeNightsField: {
+    '& .MuiOutlinedInput-input': {
+      px: 1,
+    },
+  } satisfies SxProps<Theme>,
+  capacitySearchOption: {
+    '& .MuiCheckbox-root': { marginInlineStart: -1.5 },
+  } satisfies SxProps<Theme>,
+  reservationGuestCountGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 8rem), 8rem))',
+    gap: 1.5,
   } satisfies SxProps<Theme>,
   reservationCreateDialogDialogActions: {
+    flexShrink: 0,
     px: 3,
     py: 2,
     gap: 1,
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   } satisfies SxProps<Theme>,
   campingIllustrationBox: {
     width: { xs: 72, sm: 100 },
@@ -536,6 +619,10 @@ export const uiStyles = {
     fontWeight: 700,
   } satisfies SxProps<Theme>,
   alignCenter: { alignItems: 'center' } satisfies SxProps<Theme>,
+  inlineWarning: {
+    alignItems: 'center',
+    '& svg': { flexShrink: 0 },
+  } satisfies SxProps<Theme>,
   liveOccupancyCardBox: {
     display: 'grid',
     gridTemplateColumns: {

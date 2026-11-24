@@ -11,6 +11,7 @@ import {
   IconButton,
   List,
   ListItem,
+  ListItemButton,
   Stack,
   Tooltip,
   Typography,
@@ -29,6 +30,7 @@ import {
   useLazyReservationsQuery,
   useLazyStaysQuery,
 } from './services/api'
+import { groupStayDepartures } from './services/stayDepartures'
 import { addDays, typeNameById } from './services/calendar'
 import AccommodationIdentity from './AccommodationIdentity'
 import {
@@ -66,17 +68,6 @@ type LoadState =
   | { status: 'ready'; data: DashboardState }
   | { status: 'error' }
 type Page<T> = { items: T[]; total: number; pageSize: number }
-type DepartureItem = Pick<
-  Stay,
-  | 'id'
-  | 'responsibleName'
-  | 'location'
-  | 'adults'
-  | 'children'
-  | 'infants'
-  | 'estimatedDeparture'
-  | 'reservationId'
-> & { reservation?: ReservationResponse; canCheckOut?: boolean }
 
 function formatDate(value: string, language: string) {
   return new Intl.DateTimeFormat(language, {
@@ -278,21 +269,25 @@ function ReservationRow({
 
 function DepartureRow({
   stay,
+  reservation,
   typeNames,
   typeModes,
   unitNames,
+  onViewDetail,
   onCheckOut,
 }: {
-  stay: DepartureItem
+  stay: Stay
+  reservation?: ReservationResponse
   typeNames: Map<string, string>
   typeModes: Map<string, string>
   unitNames: Map<string, string>
+  onViewDetail: () => void
   onCheckOut: () => void
 }) {
   const { t } = useTranslation()
   const identity = buildAccommodationIdentity({
-    reservation: stay.reservation,
-    hasReservation: Boolean(stay.reservationId || stay.reservation),
+    reservation,
+    hasReservation: Boolean(stay.reservationId),
     location: stay.location,
     typeNames,
     typeModes,
@@ -305,28 +300,31 @@ function DepartureRow({
   })
   return (
     <ListItem disableGutters divider sx={uiStyles.operationalListRow}>
-      <Box sx={uiStyles.flexContent}>
-        <Typography sx={uiStyles.strongWrappedText}>
-          {stay.responsibleName}
-        </Typography>
-        <AccommodationIdentity
-          identity={identity}
-          compactMobile
-          people={stay.adults + stay.children + stay.infants}
-        />
-      </Box>
+      <ListItemButton
+        onClick={onViewDetail}
+        sx={uiStyles.stayListListItemButton}
+      >
+        <Box sx={uiStyles.flexContent}>
+          <Typography sx={uiStyles.strongWrappedText}>
+            {stay.responsibleName}
+          </Typography>
+          <AccommodationIdentity
+            identity={identity}
+            compactMobile
+            people={stay.adults + stay.children + stay.infants}
+          />
+        </Box>
+      </ListItemButton>
       <Stack {...uiProps.rowSmall} sx={uiStyles.trailingActions}>
-        {stay.canCheckOut && (
-          <Tooltip title={t('home.checkOutAction')}>
-            <IconButton
-              aria-label={t('home.checkOutAction')}
-              onClick={onCheckOut}
-              sx={checkoutActionStyles}
-            >
-              <LucideIcon icon={LogOut} />
-            </IconButton>
-          </Tooltip>
-        )}
+        <Tooltip title={t('home.checkOutAction')}>
+          <IconButton
+            aria-label={t('home.checkOutAction')}
+            onClick={onCheckOut}
+            sx={checkoutActionStyles}
+          >
+            <LucideIcon icon={LogOut} />
+          </IconButton>
+        </Tooltip>
       </Stack>
     </ListItem>
   )
@@ -385,63 +383,7 @@ export default function DashboardToday({
     return identity.kind === activeFilter
   })
   const today = todayInTimezone(profile.timezone)
-  const linkedReservationIds = useMemo(
-    () =>
-      new Set(
-        (dashboard?.stays ?? [])
-          .map((stay) => stay.reservationId)
-          .filter(Boolean),
-      ),
-    [dashboard?.stays],
-  )
-  const departures = useMemo(() => {
-    if (!dashboard) return { today: [], overdue: [] }
-    const todayStays = dashboard.stays.filter(
-      (stay) => stay.estimatedDeparture === today,
-    )
-    const overdueStays = dashboard.stays.filter(
-      (stay) =>
-        Boolean(stay.estimatedDeparture) && stay.estimatedDeparture < today,
-    )
-    const unlinkedReservations: DepartureItem[] =
-      dashboard.checkedInReservations
-        .filter((reservation) => !linkedReservationIds.has(reservation.id))
-        .map((reservation) => ({
-          id: reservation.stayId ?? reservation.id,
-          reservationId: null,
-          responsibleName: reservation.responsibleName,
-          location: '',
-          adults: reservation.adults,
-          children: reservation.children,
-          infants: reservation.infants,
-          pets: reservation.pets ?? 0,
-          estimatedDeparture: reservation.checkOutDate,
-          reservation,
-          canCheckOut: Boolean(reservation.stayId),
-        }))
-    const withReservations = (items: Stay[]) =>
-      items.map((stay) => ({
-        ...stay,
-        canCheckOut: true,
-        reservation: stay.reservationId
-          ? reservationsById.get(stay.reservationId)
-          : undefined,
-      }))
-    return {
-      today: [
-        ...withReservations(todayStays),
-        ...unlinkedReservations.filter(
-          (item) => item.estimatedDeparture === today,
-        ),
-      ],
-      overdue: [
-        ...withReservations(overdueStays),
-        ...unlinkedReservations.filter(
-          (item) => item.estimatedDeparture < today,
-        ),
-      ],
-    }
-  }, [dashboard, linkedReservationIds, reservationsById, today])
+  const departures = groupStayDepartures(dashboard?.stays ?? [], today)
 
   if (query.status === 'loading')
     return <Typography color="text.secondary">{t('home.loading')}</Typography>
@@ -507,6 +449,14 @@ export default function DashboardToday({
                     typeNames={typeNames}
                     typeModes={typeModes}
                     unitNames={unitNames}
+                    reservation={
+                      stay.reservationId
+                        ? reservationsById.get(stay.reservationId)
+                        : undefined
+                    }
+                    onViewDetail={() =>
+                      onSelect({ id: stay.id, action: 'detail' })
+                    }
                     onCheckOut={() =>
                       onSelect({ id: stay.id, action: 'close' })
                     }
@@ -534,6 +484,14 @@ export default function DashboardToday({
                     typeNames={typeNames}
                     typeModes={typeModes}
                     unitNames={unitNames}
+                    reservation={
+                      stay.reservationId
+                        ? reservationsById.get(stay.reservationId)
+                        : undefined
+                    }
+                    onViewDetail={() =>
+                      onSelect({ id: stay.id, action: 'detail' })
+                    }
                     onCheckOut={() =>
                       onSelect({ id: stay.id, action: 'close' })
                     }
@@ -568,6 +526,11 @@ export default function DashboardToday({
       >
         <StayList
           items={activeStays}
+          onRegisterCheckIn={
+            dashboard.stays.length === 0
+              ? () => openWorkspaceDialog({ kind: 'check-in' })
+              : undefined
+          }
           timezone={profile.timezone}
           onSelect={onSelect}
           typeNames={typeNames}

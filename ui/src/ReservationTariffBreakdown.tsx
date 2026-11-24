@@ -59,7 +59,7 @@ function ChargeRow({
       <Box>
         <Typography variant="body2">{label}</Typography>
         {detail && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="textSecondary">
             {detail}
           </Typography>
         )}
@@ -146,17 +146,13 @@ export default function ReservationTariffBreakdown({
 
   return (
     <Stack {...uiProps.stackSmall} aria-label={t('pricing.tariffBreakdown')}>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" color="textSecondary">
         {t(`pricing.${price.basis}`)}
         {price.basis === 'per_bed' && quote.requestedBeds !== undefined
           ? ` · ${t('pricing.reservedBeds', { count: quote.requestedBeds })}`
           : ''}
+        {included && ` · ${t('pricing.includedGuests', { guests: included })}`}
       </Typography>
-      {included && (
-        <Typography variant="body2" color="text.secondary">
-          {t('pricing.includedGuests', { guests: included })}
-        </Typography>
-      )}
       {price.basis !== 'per_person' && (
         <ChargeRow
           label={t('pricing.baseAccommodation')}
@@ -186,7 +182,11 @@ export default function ReservationTariffBreakdown({
               : count
           if (price.basis === 'per_bed' || extraCount === 0) return null
           const amount = breakdown.categoryCharges?.[name]
-          if (amount === undefined) return null
+          if (
+            amount === undefined ||
+            (price.basis === 'per_unit' && amount === 0)
+          )
+            return null
           const categoryAmounts = breakdown.nights.flatMap((n) =>
             n.categoryCharges ? [n.categoryCharges[name]] : [],
           )
@@ -289,7 +289,7 @@ export default function ReservationTariffBreakdown({
               </Stack>
             ))}
             {breakdown.discountMinor > 0 && (
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="textSecondary">
                 {t('pricing.nightlyBeforeDiscount')}
               </Typography>
             )}

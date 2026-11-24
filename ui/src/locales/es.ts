@@ -39,7 +39,8 @@ const es = {
     allocatedBeds: 'Camas asignadas',
     pets: 'Mascotas',
     includeInsufficient: 'Incluir alojamientos con capacidad insuficiente',
-    oversized: 'Más grande de lo necesario · sobran {{count}} plazas',
+    oversized_one: 'Más grande de lo necesario · sobra {{count}} plaza',
+    oversized_other: 'Más grande de lo necesario · sobran {{count}} plazas',
     bedsAvailable: '{{count}} camas disponibles · {{requested}} solicitadas',
     capacityOverride:
       'Motivo de excepción de capacidad (cuando no sea por niños)',
@@ -182,7 +183,6 @@ const es = {
   },
   dateRange: {
     label: 'Seleccionar rango de fechas',
-    help: 'Elige el día de entrada y después el de salida.',
     selectDate: 'Elige una fecha',
     start: 'Entrada',
     end: 'Salida',
@@ -191,9 +191,12 @@ const es = {
     createdDetail: 'Reserva creada',
     reference: 'Referencia: {{id}}',
     step1: 'Búsqueda',
-    step2: 'Selección de opción',
-    step3: 'Datos de la reserva',
-    step4: 'Confirmación',
+    step2: 'Opciones disponibles',
+    campingOptions: 'Camping',
+    roomOptions: 'Habitaciones',
+    step3: 'Cotización',
+    step4: 'Datos de la reserva',
+    enterDetails: 'Continuar con la reserva',
     search: 'Buscar disponibilidad',
     continue: 'Continuar',
     all: 'Todas las opciones',
@@ -203,7 +206,8 @@ const es = {
     searchError:
       'No se pudo completar la búsqueda. Revisa las fechas y huéspedes e intenta nuevamente.',
 
-    title: 'Nueva reserva',
+    quoteAction: 'Cotizar reserva',
+    title: 'Cotizar reserva',
     success: 'Reserva de {{name}} creada como pendiente.',
     accommodationSection: 'Alojamiento y fechas',
     type: 'Tipo de alojamiento',
@@ -241,8 +245,6 @@ const es = {
     rounding: 'Redondeo: {{amount}}',
     total: 'Total: {{amount}}',
     createFor: 'Crear reserva por {{amount}}',
-    notHeld:
-      'La cotización no retiene disponibilidad. Se verificará nuevamente al guardar.',
     overCapacity:
       'La unidad admite un máximo de {{max}} personas y la reserva incluye {{people}}, según la configuración de ocupación. Puedes crear la reserva igualmente.',
     priceChanged:

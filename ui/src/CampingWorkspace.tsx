@@ -40,7 +40,9 @@ import {
   Typography,
 } from '@mui/material'
 import {
+  CalendarPlus,
   ChevronDown,
+  LogIn,
   Pencil,
   Plus,
   RotateCcw,
@@ -153,6 +155,7 @@ export default function CampingWorkspace({
     { status: stayStatus, accommodation },
     { skip: section !== 'stays' },
   )
+  const stayItems = stays.currentData?.pages.flatMap((page) => page.items)
   const [logout, logoutState] = useLogoutMutation()
   const profile = camping.data
 
@@ -355,13 +358,20 @@ export default function CampingWorkspace({
                   </Button>
                 </Alert>
               )}
-              {stays.currentData && profile && (
-                <EnrichedStayList
-                  items={stays.currentData.pages.flatMap((page) => page.items)}
-                  timezone={profile.timezone}
-                  onSelect={setSelection}
-                />
-              )}
+              {stayItems &&
+                profile &&
+                (stayItems.length > 0 || (!stays.isFetching && !stays.isError)) && (
+                  <EnrichedStayList
+                    items={stayItems}
+                    onRegisterCheckIn={
+                      stayStatus === 'active' && accommodation === 'total'
+                        ? () => openWorkspaceDialog({ kind: 'check-in' })
+                        : undefined
+                    }
+                    timezone={profile.timezone}
+                    onSelect={setSelection}
+                  />
+                )}
               {stays.isFetching && (
                 <Stack
                   role="status"
@@ -427,10 +437,10 @@ export default function CampingWorkspace({
           }
           sx={uiStyles.campingWorkspaceFab}
         >
-          <LucideIcon icon={Plus} />
+          <LucideIcon icon={section === 'reservations' ? CalendarPlus : LogIn} />
           {t(
             section === 'reservations'
-              ? 'reservationCreate.title'
+              ? 'reservationCreate.quoteAction'
               : 'checkIn.register',
           )}
         </Fab>
@@ -450,10 +460,12 @@ export default function CampingWorkspace({
 
 function EnrichedStayList({
   items,
+  onRegisterCheckIn,
   timezone,
   onSelect,
 }: {
   items: Stay[]
+  onRegisterCheckIn?: () => void
   timezone: string
   onSelect: (selection: StaySelection) => void
 }) {
@@ -491,6 +503,7 @@ function EnrichedStayList({
   return (
     <StayList
       items={items}
+      onRegisterCheckIn={onRegisterCheckIn}
       timezone={timezone}
       onSelect={onSelect}
       typeNames={

@@ -70,3 +70,24 @@ it('disables days before the supplied camping date while allowing today', () => 
   expect(today).toBeDefined()
   expect(today).not.toContain('disabled')
 })
+
+it('renders editable dates with the permitted arrival and departure bounds', () => {
+  const markup = renderToStaticMarkup(
+    <ThemeProvider theme={lightTheme}>
+      <DateRangeCalendar
+        editable
+        startDate="2026-10-31"
+        endDate="2026-11-02"
+        today="2026-10-30"
+        minDate="2026-10-30"
+        onChange={() => {}}
+      />
+    </ThemeProvider>,
+  )
+  const dateInputs = [...markup.matchAll(/<input\b[^>]*type="date"[^>]*>/g)]
+  expect(dateInputs).toHaveLength(2)
+  expect(dateInputs[0][0]).toContain('min="2026-10-30"')
+  expect(dateInputs[0][0]).toContain('value="2026-10-31"')
+  expect(dateInputs[1][0]).toContain('min="2026-11-01"')
+  expect(dateInputs[1][0]).toContain('value="2026-11-02"')
+})

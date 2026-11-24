@@ -1,5 +1,7 @@
 import { it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { ThemeProvider } from '@mui/material/styles'
+import { darkTheme, lightTheme } from './app/theme'
 import ReservationOfferCapacity from './ReservationOfferCapacity'
 import { i18nReady } from './app/i18n'
 import type { ReservationQuote } from '@camping/contracts'
@@ -11,14 +13,29 @@ const priceSnapshot = {
   nights: 1,
   totalMinor: 80000,
 } satisfies ReservationQuote['priceSnapshot']
-it('oversized capacity is informational and does not use warning styling', () => {
+it.each([lightTheme, darkTheme])(
+  'oversized capacity uses the $palette.mode warning color without an alert box',
+  (theme) => {
+    const html = renderToStaticMarkup(
+      <ThemeProvider theme={theme}>
+        <ReservationOfferCapacity
+          offer={{ priceSnapshot, capacityMatch: 'OVERSIZED', sparePlaces: 4 }}
+        />
+      </ThemeProvider>,
+    )
+    expect(html).toContain('sobran 4 plazas')
+    expect(html).toContain(`color:${theme.palette.warning.main}`)
+    expect(html).toContain('lucide-triangle-alert')
+    expect(html).not.toContain('MuiAlert')
+  },
+)
+it('shows the singular when one place is spare', () => {
   const html = renderToStaticMarkup(
     <ReservationOfferCapacity
-      offer={{ priceSnapshot, capacityMatch: 'OVERSIZED', sparePlaces: 4 }}
+      offer={{ priceSnapshot, capacityMatch: 'OVERSIZED', sparePlaces: 1 }}
     />,
   )
-  expect(html).toContain('sobran 4 plazas')
-  expect(html).not.toContain('MuiAlert')
+  expect(html).toContain('sobra 1 plaza</span>')
 })
 it('children overflow is a warning without an acceptance checkbox', () => {
   const html = renderToStaticMarkup(
