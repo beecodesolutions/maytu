@@ -2,6 +2,7 @@ import { uiProps, uiStyles, checkoutActionStyles } from './app/theme'
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  Button,
   IconButton,
   Tooltip,
   List,
@@ -33,6 +34,7 @@ export type StaySelection = { id: string; action: StayAction }
 
 type Props = {
   items: Stay[]
+  onRegisterCheckIn?: () => void
   timezone: string
   onSelect: (selection: StaySelection) => void
   typeNames?: Map<string, string>
@@ -43,6 +45,7 @@ type Props = {
 
 export default function StayList({
   items,
+  onRegisterCheckIn,
   timezone,
   onSelect,
   typeNames,
@@ -65,9 +68,12 @@ export default function StayList({
   }
   if (!items.length)
     return (
-      <Typography color="text.secondary" sx={uiStyles.panelPadding}>
-        {t('home.noStays')}
-      </Typography>
+      <Stack {...uiProps.stackSmall} sx={uiStyles.panelPadding}>
+        <Typography color="text.secondary">{t('home.noStays')}</Typography>
+        {onRegisterCheckIn && (
+          <Button onClick={onRegisterCheckIn}>{t('checkIn.register')}</Button>
+        )}
+      </Stack>
     )
   return (
     <>

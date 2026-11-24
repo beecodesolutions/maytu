@@ -10,6 +10,7 @@ import {
   monthRange,
   shiftMonth,
 } from './calendar'
+import { summarizeOccupancy } from './individualOccupancy'
 
 const individual = {
   typeId: '00000000-0000-4000-8000-000000000001',
@@ -56,6 +57,44 @@ describe('availability calendar helpers', () => {
     expect(availabilityForDate(individual, '2026-10-24')).toMatchObject({
       tone: 'none',
       available: 0,
+    })
+  })
+
+  it('keeps future inventory bookings out of current occupancy', () => {
+    const units = individual.nights[0].totalUnits
+    const type = {
+      id: individual.typeId,
+      enabled: true,
+      inventoryMode: 'individual',
+    } as const
+    const configuredUnits = Array.from({ length: units }, (_, index) => ({
+      id: `room-${index}`,
+      typeId: type.id,
+      enabled: true,
+    }))
+    const futureReservations = configuredUnits.map((unit) => ({
+      id: `reservation-${unit.id}`,
+      unitId: unit.id,
+      stayId: null,
+      status: 'confirmed' as const,
+      accommodationTypeId: type.id,
+    }))
+
+    const occupancy = summarizeOccupancy(
+      [type],
+      configuredUnits,
+      futureReservations,
+      [],
+    )
+    expect(occupancy.total.groups).toBe(0)
+    expect(occupancy.individualUnits).toEqual({
+      occupied: 0,
+      total: 3,
+      unoccupied: 3,
+    })
+    expect(availabilityForDate(individual, '2026-10-24')).toMatchObject({
+      available: 0,
+      reserved: 3,
     })
   })
 
