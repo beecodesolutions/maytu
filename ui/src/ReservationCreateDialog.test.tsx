@@ -1,9 +1,8 @@
 import { it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { useForm } from 'react-hook-form'
-import ReservationGuestFields, {
-  CapacitySearchOption,
-} from './ReservationGuestFields'
+import { CapacitySearchOption } from './CapacitySearchOption'
+import GuestCountFields from './components/GuestCountFields'
 import {
   reservationDefaults,
   type ReservationFormValues,
@@ -18,7 +17,7 @@ function GuestForm() {
     defaultValues: reservationDefaults('UTC'),
   })
   return (
-    <ReservationGuestFields
+    <GuestCountFields
       ageRanges={{
         adults: { min: 16, max: null },
         children: { min: 3, max: 15 },
@@ -30,10 +29,11 @@ function GuestForm() {
     />
   )
 }
-it('extends the guest selector with pets and reuses configured age labels', () => {
+it('shows an icon for each guest input and reuses configured age labels', () => {
   const html = renderToStaticMarkup(<GuestForm />)
   for (const name of ['adults', 'children', 'infants', 'pets'])
     expect(html).toContain(`name="${name}"`)
+  expect(html.match(/<svg\b/g)).toHaveLength(4)
   for (const text of ['Mascotas', '16+', '3–15', '0–2'])
     expect(html).toContain(text)
 })

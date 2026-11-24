@@ -1,7 +1,6 @@
-import ReservationGuestFields, {
-  CapacitySearchOption,
-} from './ReservationGuestFields'
+import { CapacitySearchOption } from './CapacitySearchOption'
 import ReservationOfferCapacity from './ReservationOfferCapacity'
+import GuestCountFields from './components/GuestCountFields'
 import { uiProps, uiStyles } from './app/theme'
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
@@ -329,8 +328,39 @@ export default function ReservationCreateDialog({
       fullScreen={fullScreen}
       aria-labelledby="reservation-create-title"
     >
-      <DialogTitle id="reservation-create-title">
-        {t('reservationCreate.title')}
+      <DialogTitle component="div">
+        <MobileStepper
+          variant="dots"
+          steps={4}
+          activeStep={step}
+          position="static"
+          sx={uiStyles.reservationStepHeader}
+          nextButton={null}
+          backButton={
+            <Box>
+              <Typography
+                id="reservation-create-title"
+                component="p"
+                variant="subtitle2"
+                color="text.secondary"
+              >
+                {t('reservationCreate.title')}
+              </Typography>
+              <Typography component="h2" variant="h5" aria-live="polite">
+                {t(
+                  (
+                    [
+                      'reservationCreate.step1',
+                      'reservationCreate.step2',
+                      'reservationCreate.step3',
+                      'reservationCreate.step4',
+                    ] as const
+                  )[step],
+                )}
+              </Typography>
+            </Box>
+          }
+        />
       </DialogTitle>
       <Box
         component="form"
@@ -364,26 +394,6 @@ export default function ReservationCreateDialog({
           sx={uiStyles.reservationCreateDialogDialogContent}
         >
           <Stack {...uiProps.stackForm}>
-            <MobileStepper
-              variant="dots"
-              steps={4}
-              activeStep={step}
-              position="static"
-              backButton={<span>{step + 1}/4</span>}
-              nextButton={<span />}
-            />
-            <Typography component="h2" variant="subtitle1" aria-live="polite">
-              {t(
-                (
-                  [
-                    'reservationCreate.step1',
-                    'reservationCreate.step2',
-                    'reservationCreate.step3',
-                    'reservationCreate.step4',
-                  ] as const
-                )[step],
-              )}
-            </Typography>
             {searchError && (
               <Alert severity="error">
                 {t('reservationCreate.searchError')}
@@ -525,13 +535,6 @@ export default function ReservationCreateDialog({
               <Stack {...uiProps.stackForm}>
                 <Box hidden={step !== 0}>
                   <Stack {...uiProps.stackForm}>
-                    <CapacitySearchOption
-                      checked={includeInsufficientCapacity}
-                      onChange={(value) => {
-                        setIncludeInsufficientCapacity(value)
-                        searchChanged()
-                      }}
-                    />
                     <DateRangeCalendar
                       startDate={checkInDate}
                       endDate={checkOutDate}
@@ -545,39 +548,70 @@ export default function ReservationCreateDialog({
                         searching
                       }
                       onChange={datesChanged}
-                    />
-                    <TextField
-                      name="nights"
-                      label={t('reservationCreate.nightsField')}
-                      type="number"
-                      required
-                      fullWidth
-                      value={nightsDraft ?? nights}
-                      onChange={(event) => nightsChanged(event.target.value)}
-                      disabled={locked || !checkInDate}
-                      error={invalidNights}
-                      helperText={
-                        invalidNights
-                          ? t('reservationCreate.invalidNights')
-                          : undefined
+                      summaryField={
+                        <Box>
+                          <Typography
+                            component="label"
+                            htmlFor="reservation-nights"
+                            variant="subtitle2"
+                            color="primary.main"
+                            sx={uiStyles.dateRangeSummaryLabel}
+                          >
+                            {t('reservationCreate.nightsField')}
+                          </Typography>
+                          <TextField
+                            name="nights"
+                            sx={uiStyles.dateRangeNightsField}
+                            id="reservation-nights"
+                            type="number"
+                            required
+                            fullWidth
+                            value={nightsDraft ?? nights}
+                            onChange={(event) =>
+                              nightsChanged(event.target.value)
+                            }
+                            disabled={locked || !checkInDate}
+                            error={invalidNights}
+                            slotProps={{
+                              htmlInput: {
+                                'aria-describedby': invalidNights
+                                  ? 'reservation-nights-error'
+                                  : undefined,
+                                min: 1,
+                                max: 366,
+                                step: 1,
+                                inputMode: 'numeric',
+                              },
+                            }}
+                          />
+                        </Box>
                       }
-                      slotProps={{
-                        htmlInput: {
-                          min: 1,
-                          max: 366,
-                          step: 1,
-                          inputMode: 'numeric',
-                        },
-                      }}
                     />
-                    <Box sx={uiStyles.reservationCreateDialogBox4}>
-                      <ReservationGuestFields
+                    {invalidNights && (
+                      <Typography
+                        id="reservation-nights-error"
+                        role="alert"
+                        variant="caption"
+                        color="error"
+                      >
+                        {t('reservationCreate.invalidNights')}
+                      </Typography>
+                    )}
+                    <Box sx={uiStyles.reservationGuestCountGrid}>
+                      <GuestCountFields
                         ageRanges={profile.ageRanges}
                         register={register}
                         errors={errors}
                         onChange={searchChanged}
                       />
                     </Box>
+                    <CapacitySearchOption
+                      checked={includeInsufficientCapacity}
+                      onChange={(value) => {
+                        setIncludeInsufficientCapacity(value)
+                        searchChanged()
+                      }}
+                    />
                   </Stack>
                 </Box>
                 {step === 2 && selected && (

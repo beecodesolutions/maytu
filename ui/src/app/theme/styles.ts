@@ -296,12 +296,10 @@ export const uiStyles = {
     gridTemplateColumns: 'minmax(140px, 2fr) minmax(0, 3fr)',
     gap: 1,
   } satisfies SxProps<Theme>,
-  checkInDialogBox4: {
+  guestCountGrid: {
     display: 'grid',
-    gridTemplateColumns: {
-      xs: '1fr',
-      sm: 'repeat(2, minmax(0, 1fr))',
-    },
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    maxWidth: '19rem',
     gap: 2,
   } satisfies SxProps<Theme>,
   rowBetween: {
@@ -359,10 +357,40 @@ export const uiStyles = {
     },
     gap: 2,
   } satisfies SxProps<Theme>,
-  reservationCreateDialogBox4: {
-    display: 'grid',
-    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+  reservationStepHeader: {
     gap: 2,
+    p: 0,
+    border: 0,
+    bgcolor: 'transparent',
+    '& .MuiMobileStepper-dots': { flexShrink: 0 },
+  } satisfies SxProps<Theme>,
+  dateRangeSummary: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr)) 3.5rem',
+    alignItems: 'start',
+    gap: 1.5,
+  } satisfies SxProps<Theme>,
+  dateRangeSummaryLabel: { display: 'block' } satisfies SxProps<Theme>,
+  dateRangeSummaryValue: {
+    display: 'flex',
+    alignItems: 'center',
+    minHeight: 32,
+  } satisfies SxProps<Theme>,
+  dateRangeNightsField: {
+    '& .MuiOutlinedInput-root': { minHeight: 32 },
+    '& .MuiOutlinedInput-input': {
+      ...typography.body1,
+      py: 0.5,
+      px: 1,
+    },
+  } satisfies SxProps<Theme>,
+  capacitySearchOption: {
+    '& .MuiCheckbox-root': { marginInlineStart: -1.5 },
+  } satisfies SxProps<Theme>,
+  reservationGuestCountGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 8rem), 8rem))',
+    gap: 1.5,
   } satisfies SxProps<Theme>,
   reservationCreateDialogDialogActions: {
     px: 3,

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 import Calendar, { type CalendarDayStatus } from './Calendar'
 import { useTranslation } from 'react-i18next'
@@ -12,6 +13,7 @@ type Props = {
   month?: string
   onMonthChange?: (month: string) => void
   days?: Record<string, CalendarDayStatus>
+  summaryField?: ReactNode
   disabled?: boolean
   onChange: (startDate: string, endDate: string) => void
 }
@@ -24,6 +26,7 @@ export default function DateRangeCalendar({
   month,
   onMonthChange,
   days,
+  summaryField,
   disabled = false,
   onChange,
 }: Props) {
@@ -41,9 +44,35 @@ export default function DateRangeCalendar({
       : t('dateRange.selectDate')
   return (
     <Stack {...uiProps.stackStandard}>
-      <Typography variant="body2" color="text.secondary">
-        {t('dateRange.help')}
-      </Typography>
+      <Box
+        sx={
+          summaryField
+            ? uiStyles.dateRangeSummary
+            : uiStyles.reservationReviewBox
+        }
+      >
+        <Box aria-live="polite">
+          <Typography variant="subtitle2" color="primary.main">
+            {t('dateRange.start')}
+          </Typography>
+          <Typography
+            sx={summaryField ? uiStyles.dateRangeSummaryValue : undefined}
+          >
+            {date(startDate)}
+          </Typography>
+        </Box>
+        <Box aria-live="polite">
+          <Typography variant="subtitle2" color="primary.main">
+            {t('dateRange.end')}
+          </Typography>
+          <Typography
+            sx={summaryField ? uiStyles.dateRangeSummaryValue : undefined}
+          >
+            {date(endDate)}
+          </Typography>
+        </Box>
+        {summaryField}
+      </Box>
       <Calendar
         mode="range"
         startDate={startDate}
@@ -56,20 +85,6 @@ export default function DateRangeCalendar({
         disabled={disabled}
         onChange={onChange}
       />
-      <Box sx={uiStyles.reservationReviewBox} aria-live="polite">
-        <Box>
-          <Typography variant="body2" color="text.secondary">
-            {t('dateRange.start')}
-          </Typography>
-          <Typography>{date(startDate)}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="body2" color="text.secondary">
-            {t('dateRange.end')}
-          </Typography>
-          <Typography>{date(endDate)}</Typography>
-        </Box>
-      </Box>
     </Stack>
   )
 }

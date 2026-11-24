@@ -182,7 +182,6 @@ const es = {
   },
   dateRange: {
     label: 'Seleccionar rango de fechas',
-    help: 'Elige el día de entrada y después el de salida.',
     selectDate: 'Elige una fecha',
     start: 'Entrada',
     end: 'Salida',
@@ -205,7 +204,7 @@ const es = {
       'No se pudo completar la búsqueda. Revisa las fechas y huéspedes e intenta nuevamente.',
 
     quoteAction: 'Cotizar reserva',
-    title: 'Nueva reserva',
+    title: 'Cotizar reserva',
     success: 'Reserva de {{name}} creada como pendiente.',
     accommodationSection: 'Alojamiento y fechas',
     type: 'Tipo de alojamiento',
