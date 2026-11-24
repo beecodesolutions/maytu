@@ -53,7 +53,7 @@ const response = {
   phone: null,
   document: null,
   nationality: null,
-  status: 'pending',
+  status: 'confirmed',
   source: 'manual',
   notes: '',
   priceSnapshot: quote.priceSnapshot,
@@ -92,7 +92,7 @@ it('quotes with the shared contract, keeps the warning and creates using the acc
   const created = await store
     .dispatch(api.endpoints.reservationCreate.initiate(body))
     .unwrap()
-  expect(created.status).toBe('pending')
+  expect(created.status).toBe('confirmed')
   expect(received).toEqual([body])
   await new Promise((resolve) => setTimeout(resolve, 30))
   expect(reads).toBe(2)

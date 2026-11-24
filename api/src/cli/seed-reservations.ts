@@ -28,7 +28,7 @@ Seeds local-only reservation and accommodation examples for the selected
 camping. The default is ${DEFAULT_CAMPING_KEY}. It is safe to rerun; existing
 rows and operator changes are preserved.`
 
-type SeedStatus = 'pending' | 'confirmed' | 'checked-in'
+type SeedStatus = 'confirmed' | 'checked-in'
 
 type ReservationSeed = {
   key: string
@@ -39,7 +39,7 @@ type ReservationSeed = {
   status: SeedStatus
   adults: number
   children: number
-  payment: { amountMinor: number; method: 'cash' | 'transfer' | 'card' }
+  payment?: { amountMinor: number; method: 'cash' | 'transfer' | 'card' }
 }
 
 const RESPONSIBLE_NAMES: Record<string, string> = {
@@ -106,10 +106,9 @@ const RESERVATIONS: readonly ReservationSeed[] = [
     unit: 'Habitación 2',
     startOffset: 6,
     endOffset: 8,
-    status: 'pending',
+    status: 'confirmed',
     adults: 2,
     children: 1,
-    payment: { amountMinor: 15000, method: 'transfer' },
   },
   {
     key: 'room-3-active',
@@ -161,10 +160,9 @@ const RESERVATIONS: readonly ReservationSeed[] = [
     unit: null,
     startOffset: 5,
     endOffset: 7,
-    status: 'pending',
+    status: 'confirmed',
     adults: 3,
     children: 0,
-    payment: { amountMinor: 18000, method: 'transfer' },
   },
   {
     key: 'free-today-arrival',
@@ -421,6 +419,7 @@ async function ensurePayment(
   seed: ReservationSeed,
   paymentService: ReservationPaymentsService,
 ): Promise<ReservationResponse> {
+  if (!seed.payment) return reservation
   const idempotencyKey = seededUuid(
     'payment',
     `${context.camping.id}:${seed.key}`,
@@ -447,29 +446,21 @@ async function ensureLifecycle(
   context: AuthContext,
   reservation: ReservationResponse,
   seed: ReservationSeed,
-  reservationService: ReservationService,
   checkInService: ReservationCheckInService,
 ): Promise<ReservationResponse> {
-  let current = reservation
-  if (
-    (seed.status === 'confirmed' || seed.status === 'checked-in') &&
-    current.status === 'pending'
-  )
-    current = await reservationService.command(context, current.id, 'confirm', {
-      version: current.version,
-    })
-  if (seed.status !== 'checked-in' || current.status === 'checked_in')
-    return current
-  if (current.status !== 'confirmed') return current
-  const arrivalDate = current.checkInDate
+  if (seed.status !== 'checked-in' || reservation.status === 'checked_in')
+    return reservation
+  if (reservation.status !== 'confirmed') return reservation
+  const arrivalDate = reservation.checkInDate
   const today = todayInTimezone(context.camping.timezone)
-  if (arrivalDate > today || arrivalDate >= current.checkOutDate) return current
-  const quote = await checkInService.quote(context, current.id, {
-    version: current.version,
+  if (arrivalDate > today || arrivalDate >= reservation.checkOutDate)
+    return reservation
+  const quote = await checkInService.quote(context, reservation.id, {
+    version: reservation.version,
     arrivalDate,
   })
-  return checkInService.checkIn(context, current.id, {
-    version: current.version,
+  return checkInService.checkIn(context, reservation.id, {
+    version: reservation.version,
     arrivalDate,
     acceptedTotalMinor: quote.priceSnapshot.totalMinor,
     location: locationFor(seed),
@@ -611,19 +602,17 @@ async function main(): Promise<void> {
           reservationService,
         )
         if (!existed) added++
-        if (seed.status !== 'pending')
-          reservation = await ensurePayment(
-            dataSource,
-            context,
-            reservation,
-            seed,
-            paymentService,
-          )
+        reservation = await ensurePayment(
+          dataSource,
+          context,
+          reservation,
+          seed,
+          paymentService,
+        )
         reservation = await ensureLifecycle(
           context,
           reservation,
           seed,
-          reservationService,
           checkInService,
         )
         console.log(`${seed.key}: ${reservation.status}`)

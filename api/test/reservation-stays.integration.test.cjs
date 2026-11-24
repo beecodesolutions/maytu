@@ -127,19 +127,11 @@ async function createAndCheckIn() {
     },
   })
   assert.equal(created.response.status, 201, JSON.stringify(created.value))
-  const confirmed = await request(
-    `/api/reservations/${created.value.id}/confirm`,
-    {
-      method: 'POST',
-      body: { version: created.value.version },
-    },
-  )
-  assert.equal(confirmed.response.status, 201, JSON.stringify(confirmed.value))
   const checkInQuote = await request(
     `/api/reservations/${created.value.id}/check-in/quote`,
     {
       method: 'POST',
-      body: { version: confirmed.value.version, arrivalDate },
+      body: { version: created.value.version, arrivalDate },
     },
   )
   assert.equal(
@@ -152,7 +144,7 @@ async function createAndCheckIn() {
     {
       method: 'POST',
       body: {
-        version: confirmed.value.version,
+        version: created.value.version,
         arrivalDate,
         acceptedTotalMinor: checkInQuote.value.priceSnapshot.totalMinor,
       },

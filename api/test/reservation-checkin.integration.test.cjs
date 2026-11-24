@@ -121,15 +121,7 @@ async function makeConfirmed({
     },
   })
   assert.equal(created.response.status, 201, JSON.stringify(created.value))
-  const confirmed = await request(
-    `/api/reservations/${created.value.id}/confirm`,
-    {
-      method: 'POST',
-      body: { version: created.value.version },
-    },
-  )
-  assert.equal(confirmed.response.status, 201, JSON.stringify(confirmed.value))
-  return { reservation: confirmed.value, quote: quote.value }
+  return { reservation: created.value, quote: quote.value }
 }
 
 async function checkIn(reservation, arrivalDate = todayUtc(), details = {}) {

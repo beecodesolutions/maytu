@@ -35,8 +35,8 @@ describe('individual occupancy', () => {
           accommodationTypeId: 'camping',
         },
         {
-          id: 'reservation-pending',
-          status: 'pending',
+          id: 'reservation-confirmed',
+          status: 'confirmed',
           stayId: null,
           unitId: 'room-2',
           accommodationTypeId: 'rooms',
@@ -142,7 +142,7 @@ describe('individual occupancy', () => {
           accommodationTypeId: 'rooms',
         },
         {
-          status: 'pending',
+          status: 'confirmed',
           stayId: null,
           unitId: 'room-2',
           accommodationTypeId: 'rooms',

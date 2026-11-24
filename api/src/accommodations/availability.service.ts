@@ -57,7 +57,7 @@ type UnlimitedNight = {
   infants: number
 }
 
-const activeReservationStatuses = ['pending', 'confirmed', 'checked_in']
+const activeReservationStatuses = ['confirmed', 'checked_in']
 const databaseSchema = 'camping_private'
 
 function dateList(checkInDate: string, checkOutDate: string): string[] {

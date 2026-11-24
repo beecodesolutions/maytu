@@ -305,7 +305,7 @@ export class ReservationPaymentsService {
         'La reserva ya ingresó o fue cerrada',
         'RESERVATION_STATUS_CLOSED',
       )
-    if (reservation.status !== 'pending' && reservation.status !== 'confirmed')
+    if (reservation.status !== 'confirmed')
       throw conflict(
         'La reserva cancelada o no presentada no admite nuevos pagos',
         'RESERVATION_PAYMENT_FORBIDDEN',
@@ -343,7 +343,6 @@ export class ReservationPaymentsService {
         'RESERVATION_LINKED_STAY',
       )
     if (
-      reservation.status !== 'pending' &&
       reservation.status !== 'confirmed' &&
       reservation.status !== 'cancelled' &&
       reservation.status !== 'no_show'

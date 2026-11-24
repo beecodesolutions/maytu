@@ -259,21 +259,16 @@ test('reservation and linked stay retain the accepted rounding policy across con
   assert.equal(created.status, 201, JSON.stringify(created.value))
   const reservation = created.value
   await setting(null)
-  const confirmed = await request(
-    '/reservations/' + reservation.id + '/confirm',
-    { version: reservation.version },
-  )
-  assert.equal(confirmed.status, 201)
   const quote = await request(
     '/reservations/' + reservation.id + '/check-in/quote',
-    { version: confirmed.value.version, arrivalDate: today },
+    { version: reservation.version, arrivalDate: today },
   )
   assert.equal(quote.value.priceSnapshot.totalMinor, 120100)
   assert.equal(quote.value.priceSnapshot.moneyDecimals, 0)
   const checked = await request(
     '/reservations/' + reservation.id + '/check-in',
     {
-      version: confirmed.value.version,
+      version: reservation.version,
       arrivalDate: today,
       acceptedTotalMinor: 120100,
     },

@@ -59,7 +59,7 @@ export class ReservationController {
   @Post()
   @ApiEndpoint({
     operationId: 'reservationCreate',
-    summary: 'Crear una reserva pendiente',
+    summary: 'Crear una reserva confirmada',
     status: 201,
     body: openApiRef('ReservationCreate'),
     response: openApiRef('Reservation'),
@@ -81,14 +81,7 @@ export class ReservationController {
   @ApiQuery({
     name: 'status',
     required: false,
-    enum: [
-      'pending',
-      'confirmed',
-      'checked_in',
-      'checked_out',
-      'cancelled',
-      'no_show',
-    ],
+    enum: ['confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show'],
   })
   @ApiQuery({ name: 'typeId', required: false, format: 'uuid', type: String })
   @ApiQuery({
@@ -216,29 +209,6 @@ export class ReservationController {
   ) {
     assertAllowedOrigin(request)
     return this.reservationService.update(request.auth!, id, request.body)
-  }
-
-  @Post(':id/confirm')
-  @ApiParam({ name: 'id', format: 'uuid', type: String })
-  @ApiEndpoint({
-    operationId: 'reservationConfirm',
-    summary: 'Confirmar una reserva',
-    status: 201,
-    body: openApiRef('ReservationStatusCommand'),
-    response: openApiRef('Reservation'),
-    errors: [400, 401, 403, 404, 409, 413, 500],
-  })
-  confirm(
-    @Req() request: AuthenticatedRequest,
-    @Param('id', new ParseUUIDPipe()) id: string,
-  ) {
-    assertAllowedOrigin(request)
-    return this.reservationService.command(
-      request.auth!,
-      id,
-      'confirm',
-      request.body,
-    )
   }
 
   @Post(':id/cancel')

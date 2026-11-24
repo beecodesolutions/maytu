@@ -114,15 +114,6 @@ function useTodayData(
     void Promise.all([
       allPages((page) =>
         readReservations({
-          status: 'pending',
-          checkInDate: today,
-          checkOutDate: tomorrow,
-          page,
-          pageSize: 100,
-        }).unwrap(),
-      ),
-      allPages((page) =>
-        readReservations({
           status: 'confirmed',
           checkInDate: today,
           checkOutDate: tomorrow,
@@ -141,17 +132,13 @@ function useTodayData(
         readStays({ status: 'active', page, pageSize: 100 }).unwrap(),
       ),
     ])
-      .then(([pending, confirmed, checkedInReservations, stays]) => {
+      .then(([confirmed, checkedInReservations, stays]) => {
         if (!active) return
         setState({
           status: 'ready',
           data: {
-            arrivals: [...pending, ...confirmed]
-              .filter(
-                (reservation) =>
-                  reservation.checkInDate === today &&
-                  reservation.status === 'confirmed',
-              )
+            arrivals: confirmed
+              .filter((reservation) => reservation.checkInDate === today)
               .sort((left, right) =>
                 left.responsibleName.localeCompare(right.responsibleName),
               ),

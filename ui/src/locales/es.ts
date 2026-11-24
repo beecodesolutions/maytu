@@ -208,7 +208,7 @@ const es = {
 
     quoteAction: 'Cotizar reserva',
     title: 'Cotizar reserva',
-    success: 'Reserva de {{name}} creada como pendiente.',
+    success: 'Reserva de {{name}} confirmada.',
     accommodationSection: 'Alojamiento y fechas',
     type: 'Tipo de alojamiento',
     selectType: 'Elige un tipo de alojamiento.',
@@ -354,7 +354,6 @@ const es = {
     guests: 'huéspedes',
     noUnit: 'Sin unidad asignada',
     status: {
-      pending: 'Pendiente',
       confirmed: 'Confirmada',
       checked_in: 'En estadía',
       checked_out: 'Finalizada',

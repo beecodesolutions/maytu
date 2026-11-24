@@ -104,7 +104,6 @@ export const inventoryModeSchema = z.enum(['individual', 'unlimited', 'shared'])
 export type InventoryMode = z.infer<typeof inventoryModeSchema>
 
 export const reservationStatusSchema = z.enum([
-  'pending',
   'confirmed',
   'checked_in',
   'checked_out',

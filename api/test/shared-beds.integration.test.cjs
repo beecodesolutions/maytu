@@ -468,13 +468,8 @@ test('shared check-in allows separate guests in one room; checkout retains prici
       acceptedTotalMinor: 2100,
     })
     assert.equal(booked.response.status, 201)
-    const confirmed = await api(
-      `/api/reservations/${booked.value.id}/confirm`,
-      { version: 1 },
-    )
-    assert.equal(confirmed.response.status, 201)
     const arrived = await api(`/api/reservations/${booked.value.id}/check-in`, {
-      version: confirmed.value.version,
+      version: booked.value.version,
       arrivalDate: input.checkInDate,
       acceptedTotalMinor: 2100,
     })

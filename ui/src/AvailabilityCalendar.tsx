@@ -79,7 +79,7 @@ function DayDetail({
     void (async () => {
       try {
         const items: ReservationResponse[] = []
-        const statuses = new Set(['pending', 'confirmed', 'checked_in'])
+        const statuses = new Set(['confirmed', 'checked_in'])
         let page = 1
         let total = 0
         do {

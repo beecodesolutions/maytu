@@ -367,7 +367,7 @@ export async function configureEkkoPriceboard(
         })
         if (unit && unit.maxOccupancy !== desired.capacity) {
           const active = await manager.query(
-            `SELECT 1 FROM camping_private.reservations WHERE camping_id=$1 AND unit_id=$2 AND status IN ('pending','confirmed','checked_in') LIMIT 1`,
+            `SELECT 1 FROM camping_private.reservations WHERE camping_id=$1 AND unit_id=$2 AND status IN ('confirmed','checked_in') LIMIT 1`,
             [camping.id, unitId],
           )
           if (active.length)
