@@ -198,14 +198,12 @@ function ReservationRow({
   typeNames,
   typeModes,
   unitNames,
-  language,
   onCheckIn,
 }: {
   reservation: ReservationResponse
   typeNames: Map<string, string>
   typeModes: Map<string, string>
   unitNames: Map<string, string>
-  language: string
   onCheckIn: () => void
 }) {
   const { t } = useTranslation()
@@ -242,13 +240,6 @@ function ReservationRow({
             <LucideIcon icon={LogIn} />
           </IconButton>
         </Tooltip>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={uiStyles.desktopBlock}
-        >
-          {formatDate(reservation.checkOutDate, language)}
-        </Typography>
       </Stack>
     </ListItem>
   )
@@ -406,7 +397,6 @@ export default function DashboardToday({
                     typeNames={typeNames}
                     typeModes={typeModes}
                     unitNames={unitNames}
-                    language={i18n.language}
                     onCheckIn={() =>
                       openWorkspaceDialog({
                         kind: 'reservation-check-in',
