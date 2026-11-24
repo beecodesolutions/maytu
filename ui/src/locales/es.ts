@@ -204,6 +204,7 @@ const es = {
     searchError:
       'No se pudo completar la búsqueda. Revisa las fechas y huéspedes e intenta nuevamente.',
 
+    quoteAction: 'Cotizar reserva',
     title: 'Nueva reserva',
     success: 'Reserva de {{name}} creada como pendiente.',
     accommodationSection: 'Alojamiento y fechas',

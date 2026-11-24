@@ -40,7 +40,9 @@ import {
   Typography,
 } from '@mui/material'
 import {
+  CalendarPlus,
   ChevronDown,
+  LogIn,
   Pencil,
   Plus,
   RotateCcw,
@@ -435,10 +437,10 @@ export default function CampingWorkspace({
           }
           sx={uiStyles.campingWorkspaceFab}
         >
-          <LucideIcon icon={Plus} />
+          <LucideIcon icon={section === 'reservations' ? CalendarPlus : LogIn} />
           {t(
             section === 'reservations'
-              ? 'reservationCreate.title'
+              ? 'reservationCreate.quoteAction'
               : 'checkIn.register',
           )}
         </Fab>

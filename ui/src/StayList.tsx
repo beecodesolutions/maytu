@@ -18,6 +18,7 @@ import {
 import {
   Banknote,
   EllipsisVertical,
+  LogIn,
   LogOut,
   ShoppingBasket,
 } from 'lucide-react'
@@ -71,7 +72,12 @@ export default function StayList({
       <Stack {...uiProps.stackSmall} sx={uiStyles.panelPadding}>
         <Typography color="text.secondary">{t('home.noStays')}</Typography>
         {onRegisterCheckIn && (
-          <Button onClick={onRegisterCheckIn}>{t('checkIn.register')}</Button>
+          <Button
+            onClick={onRegisterCheckIn}
+            startIcon={<LucideIcon icon={LogIn} />}
+          >
+            {t('checkIn.register')}
+          </Button>
         )}
       </Stack>
     )

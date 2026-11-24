@@ -1,6 +1,8 @@
 import { uiStyles } from './app/theme'
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Typography } from '@mui/material'
+import { LogIn } from 'lucide-react'
+import LucideIcon from './components/LucideIcon'
 import CampingIllustration from './assets/CampingIllustration'
 
 type HomeHeaderProps = {
@@ -44,6 +46,7 @@ export default function HomeHeader({
         <Button
           type="button"
           onClick={onCheckIn}
+          startIcon={<LucideIcon icon={LogIn} />}
           disabled={checkInDisabled}
           variant="contained"
           sx={uiStyles.homeHeaderButton}
