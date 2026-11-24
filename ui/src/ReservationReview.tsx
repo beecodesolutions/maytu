@@ -15,15 +15,9 @@ type Props = {
   quote: CreationQuote
   today: string
   ageRanges?: AgeRanges
-  held?: boolean
 }
 
-export default function ReservationReview({
-  quote,
-  today,
-  ageRanges,
-  held = false,
-}: Props) {
+export default function ReservationReview({ quote, today, ageRanges }: Props) {
   const { t, i18n } = useTranslation()
   const price = quote.priceSnapshot
   const guests = reservationGuestGroups(quote.input)
@@ -138,11 +132,6 @@ export default function ReservationReview({
             people: quote.occupancyWarning.people,
           })}
         </Alert>
-      )}
-      {!held && (
-        <Typography variant="body2" color="text.secondary">
-          {t('reservationCreate.notHeld')}
-        </Typography>
       )}
     </Stack>
   )

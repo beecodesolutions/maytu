@@ -245,8 +245,6 @@ const es = {
     rounding: 'Redondeo: {{amount}}',
     total: 'Total: {{amount}}',
     createFor: 'Crear reserva por {{amount}}',
-    notHeld:
-      'La cotización no retiene disponibilidad. Se verificará nuevamente al guardar.',
     overCapacity:
       'La unidad admite un máximo de {{max}} personas y la reserva incluye {{people}}, según la configuración de ocupación. Puedes crear la reserva igualmente.',
     priceChanged:

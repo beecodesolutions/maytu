@@ -103,7 +103,6 @@ export default function ReservationDetailDialog({
                   pets: reservation.pets ?? 0,
                 },
               }}
-              held
             />
             {(
               [
