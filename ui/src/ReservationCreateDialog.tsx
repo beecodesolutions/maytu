@@ -133,10 +133,18 @@ export default function ReservationCreateDialog({
     nightsDraft !== null &&
     departureForNights(checkInDate, nightsDraft) === null
   const selectedType = types.find((type) => type.id === typeId)
+  const filterUnits = typeFilter
+    ? units.filter((unit) => unit.enabled && unit.typeId === typeFilter)
+    : []
+  const showUnitFilter = filterUnits.length > 1
+  const activeUnitFilter =
+    showUnitFilter && filterUnits.some((unit) => unit.id === unitFilter)
+      ? unitFilter
+      : ''
   const visibleOffers = (offers ?? []).filter(
     ({ input }) =>
       (!typeFilter || input.accommodationTypeId === typeFilter) &&
-      (!unitFilter || input.unitId === unitFilter),
+      (!activeUnitFilter || input.unitId === activeUnitFilter),
   )
   const offerGroups = [
     {
@@ -444,27 +452,23 @@ export default function ReservationCreateDialog({
                       </MenuItem>
                     ))}
                   </TextField>
-                  <TextField
-                    select
-                    fullWidth
-                    label={t('reservationCreate.unit')}
-                    slotProps={uiProps.selectWithEmptyOption}
-                    value={unitFilter}
-                    onChange={(event) => setUnitFilter(event.target.value)}
-                  >
-                    <MenuItem value="">{t('reservationCreate.all')}</MenuItem>
-                    {units
-                      .filter(
-                        (unit) =>
-                          unit.enabled &&
-                          (!typeFilter || unit.typeId === typeFilter),
-                      )
-                      .map((unit) => (
+                  {showUnitFilter && (
+                    <TextField
+                      select
+                      fullWidth
+                      label={t('reservationCreate.unit')}
+                      slotProps={uiProps.selectWithEmptyOption}
+                      value={activeUnitFilter}
+                      onChange={(event) => setUnitFilter(event.target.value)}
+                    >
+                      <MenuItem value="">{t('reservationCreate.all')}</MenuItem>
+                      {filterUnits.map((unit) => (
                         <MenuItem key={unit.id} value={unit.id}>
                           {unit.name}
                         </MenuItem>
                       ))}
-                  </TextField>
+                    </TextField>
+                  )}
                 </Box>
                 {offers.length > 0 && offerGroups.length === 0 && (
                   <Alert severity="info">
