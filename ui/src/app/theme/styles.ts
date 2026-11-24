@@ -859,10 +859,15 @@ export const uiStyles = {
     flexWrap: 'wrap',
     gap: 0.75,
   } satisfies SxProps<Theme>,
-  availabilityCalendarBox2: {
+  dayDetailReservationButton: {
+    display: 'block',
     borderTop: 1,
     borderColor: 'divider',
-    pt: 1,
+    '&.Mui-focusVisible': {
+      outline: '2px solid',
+      outlineColor: 'primary.main',
+      outlineOffset: 2,
+    },
   } satisfies SxProps<Theme>,
   availabilityCalendarStack: {
     justifyContent: 'space-between',

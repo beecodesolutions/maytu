@@ -188,7 +188,7 @@ const es = {
     end: 'Salida',
   },
   reservationCreate: {
-    createdDetail: 'Reserva creada',
+    detailTitle: 'Detalle de reserva',
     reference: 'Referencia: {{id}}',
     step1: 'Búsqueda',
     step2: 'Opciones disponibles',
@@ -406,6 +406,7 @@ const es = {
     creditHelp: 'El saldo a favor debe consumirse antes de cerrar.',
     payments: 'Pagos',
     noPayments: 'Todavía no hay pagos registrados.',
+    voidedPayment: 'Anulado',
     paymentAmount: 'Monto',
     paymentMethod: 'Medio de pago',
     paymentDate: 'Fecha de pago',

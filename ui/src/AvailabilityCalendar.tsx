@@ -7,6 +7,7 @@ import {
   Box,
   Button,
   Chip,
+  ListItemButton,
   MenuItem,
   Stack,
   TextField,
@@ -14,6 +15,7 @@ import {
 } from '@mui/material'
 import Calendar, { type CalendarDayStatus } from './components/Calendar'
 import CalendarLegend from './components/CalendarLegend'
+import { openWorkspaceDialog } from './app/workspaceDialog'
 import AccommodationIdentity from './AccommodationIdentity'
 import { buildAccommodationIdentity } from './services/accommodationIdentity'
 import type {
@@ -232,7 +234,17 @@ function DayDetail({
           )}
         <Stack {...uiProps.stackMedium}>
           {currentReservations.map((reservation) => (
-            <Box key={reservation.id} sx={uiStyles.availabilityCalendarBox2}>
+            <ListItemButton
+              key={reservation.id}
+              disableGutters
+              sx={uiStyles.dayDetailReservationButton}
+              onClick={() =>
+                openWorkspaceDialog({
+                  kind: 'reservation-detail',
+                  id: reservation.id,
+                })
+              }
+            >
               <Stack {...uiProps.row} sx={uiStyles.availabilityCalendarStack}>
                 <Typography sx={uiStyles.boldText}>
                   {reservation.responsibleName}
@@ -263,7 +275,7 @@ function DayDetail({
               <Typography variant="caption" color="text.secondary">
                 {reservation.checkInDate} → {reservation.checkOutDate}
               </Typography>
-            </Box>
+            </ListItemButton>
           ))}
         </Stack>
       </Box>
