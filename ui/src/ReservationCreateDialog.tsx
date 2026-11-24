@@ -352,6 +352,7 @@ export default function ReservationCreateDialog({
       fullWidth
       maxWidth="sm"
       fullScreen={fullScreen}
+      slotProps={{ paper: { sx: uiStyles.reservationCreateDialogPaper } }}
       aria-labelledby="reservation-create-title"
     >
       <DialogTitle component="div">
@@ -411,7 +412,7 @@ export default function ReservationCreateDialog({
             else if (quote && accepted) void saveValues()
           }
         }}
-        sx={uiStyles.formColumn}
+        sx={uiStyles.reservationCreateDialogForm}
       >
         <DialogContent
           dividers

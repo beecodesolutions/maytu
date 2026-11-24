@@ -58,6 +58,12 @@ export const checkoutActionStyles = (theme: Theme) => {
   }
 }
 
+const formColumn = {
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: 0,
+} satisfies SxProps<Theme>
+
 export const uiStyles = {
   sectionCard: (height?: CSSProperties['height']): SxProps<Theme> => ({
     p: { xs: 2, sm: 3 },
@@ -280,10 +286,10 @@ export const uiStyles = {
     maxWidth: 380,
   } satisfies SxProps<Theme>,
   boldText: { fontWeight: 700 } satisfies SxProps<Theme>,
-  formColumn: {
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: 0,
+  formColumn,
+  reservationCreateDialogForm: {
+    ...formColumn,
+    flex: 1,
   } satisfies SxProps<Theme>,
   fieldsetReset: {
     m: 0,
@@ -388,6 +394,10 @@ export const uiStyles = {
     display: 'grid',
     gap: 0.25,
   } satisfies SxProps<Theme>,
+  reservationCreateDialogPaper: {
+    height: { xs: '100%', sm: '48rem' },
+    overflow: 'hidden',
+  } satisfies SxProps<Theme>,
   reservationCreateDialogDialogContent: {
     outline: 'none',
   } satisfies SxProps<Theme>,
@@ -436,10 +446,11 @@ export const uiStyles = {
     gap: 1.5,
   } satisfies SxProps<Theme>,
   reservationCreateDialogDialogActions: {
+    flexShrink: 0,
     px: 3,
     py: 2,
     gap: 1,
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   } satisfies SxProps<Theme>,
   campingIllustrationBox: {
     width: { xs: 72, sm: 100 },
