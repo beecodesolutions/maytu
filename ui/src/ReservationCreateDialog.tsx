@@ -617,6 +617,7 @@ export default function ReservationCreateDialog({
                 <Box hidden={step !== 0}>
                   <Stack {...uiProps.stackForm}>
                     <DateRangeCalendar
+                      editable
                       startDate={checkInDate}
                       endDate={checkOutDate}
                       today={todayInTimezone(profile.timezone)}

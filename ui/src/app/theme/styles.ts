@@ -415,21 +415,20 @@ export const uiStyles = {
   } satisfies SxProps<Theme>,
   dateRangeSummary: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, minmax(0, 1fr)) 3.5rem',
+    gridTemplateColumns: 'repeat(2, minmax(0, 10rem)) 3.5rem',
     alignItems: 'start',
     gap: 1.5,
   } satisfies SxProps<Theme>,
   dateRangeSummaryLabel: { display: 'block' } satisfies SxProps<Theme>,
-  dateRangeSummaryValue: {
-    display: 'flex',
-    alignItems: 'center',
-    minHeight: 32,
+  dateRangeDateField: {
+    minWidth: 0,
+    '& .MuiOutlinedInput-input': {
+      px: 1,
+      minWidth: 0,
+    },
   } satisfies SxProps<Theme>,
   dateRangeNightsField: {
-    '& .MuiOutlinedInput-root': { minHeight: 32 },
     '& .MuiOutlinedInput-input': {
-      ...typography.body1,
-      py: 0.5,
       px: 1,
     },
   } satisfies SxProps<Theme>,
