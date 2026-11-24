@@ -258,7 +258,6 @@ export default function ReservationCreateDialog({
       return
     }
     const input = reservationQuoteInput(values, selectedType)
-    const unit = units.find((item) => item.id === input.unitId)
     setAccepted(false)
     dispatch({ type: 'quote-start' })
     try {
@@ -267,9 +266,7 @@ export default function ReservationCreateDialog({
         ...result,
         input,
         responsibleName: '',
-        accommodationName: unit
-          ? `${selectedType.name} · ${unit.name}`
-          : selectedType.name,
+        accommodationName: selected.accommodationName,
       }
       dispatch({ type: 'quote-success', revision, quote: refreshedQuote })
       if (
@@ -691,6 +688,7 @@ export default function ReservationCreateDialog({
                   <Stack {...uiProps.stackForm}>
                     <ReservationReview
                       quote={quote ?? selected}
+                      ageRanges={profile.ageRanges}
                       today={todayInTimezone(profile.timezone)}
                     />
                     {selected.capacityMatch === 'INSUFFICIENT' && (

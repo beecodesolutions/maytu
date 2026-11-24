@@ -314,10 +314,6 @@ export const uiStyles = {
     gap: 2,
   } satisfies SxProps<Theme>,
   semiboldText: { fontWeight: 600 } satisfies SxProps<Theme>,
-  reservationReviewStack: {
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  } satisfies SxProps<Theme>,
   tariffBreakdownRow: {
     display: 'grid',
     gridTemplateColumns: 'minmax(0, 1fr) auto',

@@ -1,3 +1,5 @@
+import type { AgeRanges } from '@camping/contracts'
+import { GuestCountSummary } from './components/GuestCountFields'
 import ReservationTariffBreakdown from './ReservationTariffBreakdown'
 import { uiProps, uiStyles } from './app/theme'
 import { Alert, Box, Divider, Stack, Typography } from '@mui/material'
@@ -9,11 +11,17 @@ import {
 } from './reservations/review'
 import { formatMoney } from './services/money'
 
-type Props = { quote: CreationQuote; today: string; held?: boolean }
+type Props = {
+  quote: CreationQuote
+  today: string
+  ageRanges?: AgeRanges
+  held?: boolean
+}
 
 export default function ReservationReview({
   quote,
   today,
+  ageRanges,
   held = false,
 }: Props) {
   const { t, i18n } = useTranslation()
@@ -29,9 +37,6 @@ export default function ReservationReview({
       aria-label={t('reservationCreate.summary')}
     >
       <Box>
-        <Typography variant="overline" color="text.secondary">
-          {t('reservationCreate.accommodationLabel')}
-        </Typography>
         <Typography variant="h3">{quote.accommodationName}</Typography>
         {quote.responsibleName && (
           <Typography variant="body1" sx={uiStyles.smallTopGap}>
@@ -39,7 +44,7 @@ export default function ReservationReview({
           </Typography>
         )}
       </Box>
-      <Box sx={uiStyles.reservationReviewBox}>
+      <Box sx={uiStyles.dateRangeSummary}>
         <Box>
           <Typography variant="body2" color="text.secondary">
             {t('reservationCreate.checkIn')}
@@ -56,30 +61,17 @@ export default function ReservationReview({
             {date(quote.input.checkOutDate)}
           </Typography>
         </Box>
+        <Box>
+          <Typography variant="body2" color="text.secondary">
+            {t('reservationCreate.nightsField')}
+          </Typography>
+          <Typography sx={uiStyles.semiboldText}>{price.nights}</Typography>
+        </Box>
       </Box>
-      <Stack
-        {...uiProps.rowSmall}
-
-        useFlexGap
-        sx={uiStyles.reservationReviewStack}
-      >
-        <Typography sx={uiStyles.semiboldText}>
-          {t('reservationCreate.nights', { count: price.nights })}
-        </Typography>
-        <Typography color="text.secondary">·</Typography>
-        <Typography>
-          {guests
-            .map(({ name, count }) =>
-              t(`reservationCreate.guest_${name}`, { count }),
-            )
-            .join(' · ')}
-        </Typography>
-      </Stack>
-      {!!quote.input.pets && (
-        <Typography>
-          {t('pricing.pets')}: {quote.input.pets}
-        </Typography>
-      )}
+      <GuestCountSummary
+        counts={quote.input}
+        ageRanges={price.basis === 'per_person' ? price.ageRanges : ageRanges}
+      />
       <Divider />
       <Stack {...uiProps.stackSmall}>
         <Typography component="h4" variant="h6">

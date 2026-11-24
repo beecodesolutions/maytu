@@ -186,7 +186,11 @@ export default function ReservationTariffBreakdown({
               : count
           if (price.basis === 'per_bed' || extraCount === 0) return null
           const amount = breakdown.categoryCharges?.[name]
-          if (amount === undefined) return null
+          if (
+            amount === undefined ||
+            (price.basis === 'per_unit' && !includedOccupancy && amount === 0)
+          )
+            return null
           const categoryAmounts = breakdown.nights.flatMap((n) =>
             n.categoryCharges ? [n.categoryCharges[name]] : [],
           )

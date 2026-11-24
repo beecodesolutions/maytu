@@ -25,22 +25,35 @@ const quote = {
   },
 } satisfies CreationQuote
 
-it('shows singular guests, readable dates and one formatted total with no empty groups', () => {
+it('shows nonzero guest counts, readable dates and one formatted total with no empty groups', () => {
   const markup = renderToStaticMarkup(
-    <ReservationReview quote={quote} today="2026-10-30" />,
-  )
+    <ReservationReview
+      quote={{ ...quote, input: { ...quote.input, pets: 2 } }}
+      today="2026-10-30"
+      ageRanges={{
+        adults: { min: 18, max: null },
+        children: { min: 6, max: 17 },
+        infants: { min: 0, max: 5 },
+      }}
+    />,
+  ).replace(/<style[^>]*>.*?<\/style>/gs, '')
   for (const text of [
     'Habitación privada',
     'Ana',
-    '1 adulto',
+    'Adultos (18+)',
+    'Mascotas',
     '30 de octubre',
     '9 de noviembre',
-    '10 noches',
+    'Noches',
     'Total de la reserva',
   ])
     expect(markup).toContain(text)
-  expect(markup).not.toContain('0 niños')
-  expect(markup).not.toContain('0 bebés')
+  expect(markup).toMatch(/Noches<\/p><p[^>]*>10<\/p>/)
+  expect(markup).not.toContain('>Alojamiento<')
+  expect(markup).toMatch(/Adultos \(18\+\)<\/p><div[^>]*><svg[^>]*>.*?<\/svg><p[^>]*>1<\/p>/)
+  expect(markup).toMatch(/Mascotas<\/p><div[^>]*><svg[^>]*>.*?<\/svg><p[^>]*>2<\/p>/)
+  expect(markup).not.toContain('Niños')
+  expect(markup).not.toContain('Bebés')
   expect(markup).not.toContain('2026-10-30')
   expect(markup).not.toContain('MXN 9.000 MXN')
 })
@@ -157,6 +170,28 @@ const unitBreakdownQuote = {
     },
   },
 } satisfies CreationQuote
+
+it('omits zero-cost additional guest rows on legacy unit tariffs', () => {
+  const legacyQuote = {
+    ...quote,
+    accommodationName: 'Zona de camping',
+    priceSnapshot: {
+      ...quote.priceSnapshot,
+      breakdown: {
+        ...unitBreakdownQuote.priceSnapshot.breakdown,
+        humanMinor: 0,
+        categoryCharges: { adults: 0, children: 0, infants: 0 },
+      },
+    },
+  } satisfies CreationQuote
+  const html = renderToStaticMarkup(
+    <ReservationReview quote={legacyQuote} today="2026-10-30" />,
+  )
+  expect(html).toContain('>Zona de camping<')
+  expect(html).toContain('>Adultos</p>')
+  expect(html).not.toContain('1 adulto adicional')
+  expect(html).not.toContain('Habitación 1')
+})
 
 it('explains included guests, additional guests, pets, discount and agreed adjustment without duplicating charges', () => {
   const html = renderToStaticMarkup(
