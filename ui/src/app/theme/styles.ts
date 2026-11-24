@@ -341,6 +341,32 @@ export const uiStyles = {
     whiteSpace: 'nowrap',
     fontVariantNumeric: 'tabular-nums',
   } satisfies SxProps<Theme>,
+  reservationGuestCard: {
+    p: { xs: 1.5, sm: 2 },
+    borderRadius: 2,
+  } satisfies SxProps<Theme>,
+  reservationDetailHeader: {
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    '& > *': { minWidth: 0 },
+  } satisfies SxProps<Theme>,
+  reservationDetailIdentity: {
+    maxWidth: '50%',
+    textAlign: 'right',
+    justifyContent: 'flex-end',
+    '& svg': { flexShrink: 0 },
+  } satisfies SxProps<Theme>,
+  reservationDetailFields: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: 1.25,
+  } satisfies SxProps<Theme>,
+  reservationDetailField: {
+    '& svg': { flexShrink: 0 },
+  } satisfies SxProps<Theme>,
+  reservationDetailFullWidthField: {
+    gridColumn: '1 / -1',
+  } satisfies SxProps<Theme>,
   reservationReviewStack2: {
     justifyContent: 'space-between',
     gap: 2,

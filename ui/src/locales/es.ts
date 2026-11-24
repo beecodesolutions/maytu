@@ -189,6 +189,7 @@ const es = {
   },
   reservationCreate: {
     detailTitle: 'Detalle de reserva',
+    detailsSection: 'Datos del huésped',
     reference: 'Referencia: {{id}}',
     step1: 'Búsqueda',
     step2: 'Opciones disponibles',

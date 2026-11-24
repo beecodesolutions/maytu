@@ -7,6 +7,7 @@ import {
   type CountryCode,
 } from 'libphonenumber-js/min'
 import { useTranslation } from 'react-i18next'
+import { countryFlag } from '../services/countryFlag'
 
 type CountrySelectProps = {
   label: string
@@ -18,12 +19,6 @@ type CountrySelectProps = {
   error?: string
   callingCode?: boolean
   required?: boolean
-}
-
-function flag(country: CountryCode) {
-  return String.fromCodePoint(
-    ...[...country].map((letter) => letter.charCodeAt(0) + 127397),
-  )
 }
 
 export default function CountrySelect({
@@ -55,7 +50,7 @@ export default function CountrySelect({
       getOptionKey={(country) => country}
       getOptionLabel={(country) =>
         callingCode
-          ? `${flag(country)} +${getCountryCallingCode(country)}`
+          ? `${countryFlag(country)} +${getCountryCallingCode(country)}`
           : name(country)
       }
       filterOptions={createFilterOptions({
@@ -64,7 +59,7 @@ export default function CountrySelect({
       })}
       renderOption={({ key, ...props }, country) => (
         <li key={key} {...props}>
-          {callingCode ? `${flag(country)} ` : ''}
+          {callingCode ? `${countryFlag(country)} ` : ''}
           {name(country)}
           {callingCode ? ` (+${getCountryCallingCode(country)})` : ''}
         </li>

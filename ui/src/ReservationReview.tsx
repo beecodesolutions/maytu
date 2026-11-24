@@ -14,6 +14,7 @@ import { formatMoney } from './services/money'
 type Props = {
   quote: CreationQuote
   accommodationTitle?: string
+  showResponsibleName?: boolean
   today: string
   ageRanges?: AgeRanges
 }
@@ -21,6 +22,7 @@ type Props = {
 export default function ReservationReview({
   quote,
   accommodationTitle = quote.accommodationName,
+  showResponsibleName = true,
   today,
   ageRanges,
 }: Props) {
@@ -38,7 +40,7 @@ export default function ReservationReview({
     >
       <Box>
         <Typography variant="h3">{accommodationTitle}</Typography>
-        {quote.responsibleName && (
+        {showResponsibleName && quote.responsibleName && (
           <Typography variant="body1" sx={uiStyles.smallTopGap}>
             {quote.responsibleName}
           </Typography>

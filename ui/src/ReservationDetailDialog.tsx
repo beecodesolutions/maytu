@@ -1,21 +1,33 @@
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
+  Paper,
   Stack,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
 import type { CampingProfile, ReservationResponse } from '@camping/contracts'
 import { todayInTimezone } from '@camping/contracts'
+import {
+  IdCard,
+  Mail,
+  NotebookPen,
+  Phone,
+  Signpost,
+} from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { uiProps } from './app/theme'
+import { uiProps, uiStyles } from './app/theme'
+import LucideIcon from './components/LucideIcon'
+import { countryFlag } from './services/countryFlag'
 import { formatMoney } from './services/money'
 import {
   useAccommodationTypesQuery,
@@ -31,6 +43,20 @@ type Props = {
   onClose: () => void
   onCheckInSuccess: () => void
 }
+
+const guestFields = [
+  { name: 'phone', label: 'checkIn.phone', icon: Phone },
+  { name: 'email', label: 'reservationCreate.email', icon: Mail },
+] as const
+
+const reservationFields = [
+  { name: 'source', label: 'reservationCreate.source', icon: Signpost },
+  { name: 'notes', label: 'reservationCreate.notes', icon: NotebookPen },
+] as const
+
+type DetailField =
+  | (typeof guestFields)[number]
+  | (typeof reservationFields)[number]
 
 export default function ReservationDetailDialog({
   id,
@@ -48,6 +74,40 @@ export default function ReservationDetailDialog({
   const types = useAccommodationTypesQuery()
   const units = useAccommodationUnitsQuery()
   const reservation = query.currentData
+  const document = reservation?.document?.trim()
+  const country = reservation?.nationality
+  const countryName = country
+    ? new Intl.DisplayNames(i18n.language, { type: 'region' }).of(country) ??
+      country
+    : null
+  const renderFields = (fields: readonly DetailField[]) =>
+    fields.flatMap(({ name, label, icon }) => {
+      const value = reservation?.[name]?.trim()
+      if (!value) return []
+      return (
+        <Box
+          key={name}
+          sx={
+            name === 'email'
+              ? uiStyles.reservationDetailFullWidthField
+              : undefined
+          }
+        >
+          <Tooltip title={t(label)}>
+            <Stack
+              {...uiProps.rowSmall}
+              role="group"
+              sx={uiStyles.reservationDetailField}
+            >
+              <LucideIcon icon={icon} fontSize="small" aria-hidden />
+              <Typography sx={uiStyles.wrappedText}>{value}</Typography>
+            </Stack>
+          </Tooltip>
+        </Box>
+      )
+    })
+  const guestDetails = renderFields(guestFields)
+  const reservationDetails = renderFields(reservationFields)
   const today = todayInTimezone(profile.timezone)
   const canCheckIn =
     reservation?.status === 'confirmed' &&
@@ -113,6 +173,7 @@ export default function ReservationDetailDialog({
             </Typography>
             <ReservationReview
               today={today}
+              showResponsibleName={false}
               quote={{
                 priceSnapshot: reservation.priceSnapshot,
                 responsibleName: reservation.responsibleName,
@@ -189,26 +250,68 @@ export default function ReservationDetailDialog({
                 )}
               </Typography>
             </Stack>
-            <Divider />
-            {(
-              [
-                'nationality',
-                'document',
-                'phone',
-                'email',
-                'source',
-                'notes',
-              ] as const
-            ).map((name) => (
-              <Typography key={name}>
-                {t(
-                  name === 'source' || name === 'email' || name === 'notes'
-                    ? `reservationCreate.${name}`
-                    : `checkIn.${name}`,
-                )}
-                : {reservation[name] || '—'}
+            <Stack
+              component="section"
+              aria-labelledby="reservation-details-heading"
+              {...uiProps.stackSmall}
+            >
+              <Typography
+                id="reservation-details-heading"
+                component="h3"
+                variant="subtitle1"
+              >
+                {t('reservationCreate.detailsSection')}
               </Typography>
-            ))}
+              <Paper variant="outlined" sx={uiStyles.reservationGuestCard}>
+                <Stack {...uiProps.stackSmall}>
+                  <Stack
+                    {...uiProps.rowSmall}
+                    sx={uiStyles.reservationDetailHeader}
+                  >
+                    <Stack {...uiProps.stackTight}>
+                      <Typography variant="subtitle1" sx={uiStyles.wrappedText}>
+                        {reservation.responsibleName}
+                      </Typography>
+                      {country && (
+                        <Tooltip title={t('checkIn.nationality')}>
+                          <Stack {...uiProps.rowSmall} role="group">
+                            <span aria-hidden>{countryFlag(country)}</span>
+                            <Typography variant="body2" sx={uiStyles.wrappedText}>
+                              {countryName}
+                            </Typography>
+                          </Stack>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                    {document && (
+                      <Tooltip title={t('checkIn.document')}>
+                        <Stack
+                          {...uiProps.rowSmall}
+                          role="group"
+                          sx={uiStyles.reservationDetailIdentity}
+                        >
+                          <LucideIcon icon={IdCard} fontSize="small" aria-hidden />
+                          <Typography variant="body2" sx={uiStyles.wrappedText}>
+                            {document}
+                          </Typography>
+                        </Stack>
+                      </Tooltip>
+                    )}
+                  </Stack>
+                  {guestDetails.length > 0 && (
+                    <>
+                      <Divider />
+                      <Box sx={uiStyles.reservationDetailFields}>
+                        {guestDetails}
+                      </Box>
+                    </>
+                  )}
+                </Stack>
+              </Paper>
+            </Stack>
+            {reservationDetails.length > 0 && (
+              <Stack {...uiProps.stackSmall}>{reservationDetails}</Stack>
+            )}
           </Stack>
         )}
       </DialogContent>
