@@ -160,6 +160,7 @@ export const uiStyles = {
     gridTemplateColumns: {
       xs: 'minmax(0, 1fr)',
       md: 'minmax(0, 1.3fr) minmax(0, 1fr)',
+      lg: 'minmax(0, 0.9fr) minmax(0, 1.1fr)',
     },
     gap: 3,
     alignItems: 'start',
@@ -172,6 +173,15 @@ export const uiStyles = {
     justifyContent: 'space-between',
     gap: 1,
     flexWrap: 'wrap',
+  } satisfies SxProps<Theme>,
+  availabilityTypeFilters: {
+    display: 'grid',
+    gridTemplateColumns: 'auto minmax(0, 1fr)',
+    alignItems: 'center',
+    gap: 1,
+    flex: '1 1 16rem',
+    minWidth: 0,
+    maxWidth: '22rem',
   } satisfies SxProps<Theme>,
   availabilityDateCalendar: (theme: Theme) => ({
     ...dateRangeCalendar(theme),
@@ -513,9 +523,9 @@ export const uiStyles = {
     overflowY: { md: 'auto' },
   })) satisfies SxProps<Theme>,
   workspaceContent: ((theme) => ({
-    maxWidth: 980,
+    maxWidth: { xs: 980, lg: 1680 },
     mx: 'auto',
-    px: { xs: 2, sm: 3 },
+    px: { xs: 2, sm: 3, lg: 5 },
     pt: {
       xs: 3,
       md: 5,
@@ -831,7 +841,20 @@ export const uiStyles = {
   } satisfies SxProps<Theme>,
   dayDetailBox: { mt: 1.5 } satisfies SxProps<Theme>,
   bottomGap: { mb: 2 } satisfies SxProps<Theme>,
-  dayDetailStack2: { flexWrap: 'wrap', mb: 2 } satisfies SxProps<Theme>,
+  dayDetailTypes: (showAll: boolean): SxProps<Theme> => ({
+    display: 'grid',
+    gridTemplateColumns: {
+      xs: 'minmax(0, 1fr)',
+      xl: showAll ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+    },
+    gap: 2,
+    mb: 2,
+  }),
+  dayDetailChips: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 0.75,
+  } satisfies SxProps<Theme>,
   availabilityCalendarBox2: {
     borderTop: 1,
     borderColor: 'divider',
@@ -853,9 +876,6 @@ export const uiStyles = {
     textAlign: 'center',
     fontWeight: 700,
     textTransform: 'capitalize',
-  } satisfies SxProps<Theme>,
-  availabilityCalendarToggleButtonGroup: {
-    flexWrap: 'wrap',
   } satisfies SxProps<Theme>,
   availabilityCalendarTypography5: {
     color: 'primary.dark',

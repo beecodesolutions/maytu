@@ -21,9 +21,6 @@ export default function CalendarLegend() {
       >
         ● {t('calendar.none')}
       </Typography>
-      <Typography variant="caption" color="text.secondary">
-        ● {t('calendar.unlimited')}
-      </Typography>
     </Stack>
   )
 }

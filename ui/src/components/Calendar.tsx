@@ -6,8 +6,8 @@ import { uiProps, uiStyles } from '../app/theme'
 import { dateFromIso, isoDate } from '../services/calendar'
 
 export type CalendarDayStatus = {
-  tone: 'free' | 'partial' | 'none' | 'unlimited'
-  label: string
+  tone?: 'free' | 'partial' | 'none' | 'unlimited'
+  label?: string
 }
 
 type CommonProps = {
@@ -53,8 +53,13 @@ export default function Calendar(props: RangeProps | SingleProps) {
     modifiersClassNames: uiProps.calendarStatusClasses,
     labels: props.days
       ? {
-          labelDayButton: (date: Date, modifiers: Record<string, boolean>) =>
-            `${isoDate(date)}${modifiers.today ? `, ${t('calendar.today')}` : ''}: ${props.days?.[isoDate(date)]?.label ?? t('calendar.noData')}`,
+          labelDayButton: (date: Date, modifiers: Record<string, boolean>) => {
+            const iso = isoDate(date)
+            const status = props.days?.[iso]
+            const label = status ? status.label : t('calendar.noData')
+            const day = modifiers.today ? `${iso}, ${t('calendar.today')}` : iso
+            return label ? `${day}: ${label}` : day
+          },
         }
       : undefined,
     disabled: props.disabled
