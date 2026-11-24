@@ -146,17 +146,13 @@ export default function ReservationTariffBreakdown({
 
   return (
     <Stack {...uiProps.stackSmall} aria-label={t('pricing.tariffBreakdown')}>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" color="textSecondary">
         {t(`pricing.${price.basis}`)}
         {price.basis === 'per_bed' && quote.requestedBeds !== undefined
           ? ` · ${t('pricing.reservedBeds', { count: quote.requestedBeds })}`
           : ''}
+        {included && ` · ${t('pricing.includedGuests', { guests: included })}`}
       </Typography>
-      {included && (
-        <Typography variant="body2" color="text.secondary">
-          {t('pricing.includedGuests', { guests: included })}
-        </Typography>
-      )}
       {price.basis !== 'per_person' && (
         <ChargeRow
           label={t('pricing.baseAccommodation')}

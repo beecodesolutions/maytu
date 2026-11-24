@@ -415,6 +415,7 @@ export const uiStyles = {
   reservationStepHeader: {
     gap: 2,
     p: 0,
+    paddingInlineEnd: 1,
     border: 0,
     bgcolor: 'transparent',
     '& .MuiMobileStepper-dots': { flexShrink: 0 },
