@@ -392,21 +392,20 @@ export class ReservationService {
           nationality: input.nationality ?? null,
           source: input.source ?? 'manual',
           notes: input.notes ?? '',
-          status: 'pending',
+          status: 'confirmed',
           priceSnapshot: snapshotWithoutInternalBase(snapshot),
           createRequestHash: requestHash,
           version: 1,
         })
         const saved = await manager.save(row)
-        if (['pending', 'confirmed', 'checked_in'].includes(saved.status))
-          await assignBeds(
-            manager,
+        await assignBeds(
+          manager,
+          saved,
+          humanOccupancy(
             saved,
-            humanOccupancy(
-              saved,
-              saved.priceSnapshot.infantsConsumeCapacity ?? false,
-            ),
-          )
+            saved.priceSnapshot.infantsConsumeCapacity ?? false,
+          ),
+        )
         await appendReservationMutation(
           manager,
           context,
@@ -525,7 +524,7 @@ export class ReservationService {
         const row = await lockReservation(manager, context.camping.id, id)
         if (row.status === 'checked_in')
           return this.quoteCheckedIn(manager, context, row, patch)
-        if (row.status !== 'pending' && row.status !== 'confirmed')
+        if (row.status !== 'confirmed')
           throw conflict(
             'La reserva no se puede editar',
             'INVALID_RESERVATION_STATE',
@@ -568,7 +567,7 @@ export class ReservationService {
         const row = await lockReservation(manager, context.camping.id, id)
         if (row.status === 'checked_in')
           return this.updateCheckedIn(manager, context, row, patch)
-        if (row.status !== 'pending' && row.status !== 'confirmed')
+        if (row.status !== 'confirmed')
           throw conflict(
             'La reserva no se puede editar',
             'INVALID_RESERVATION_STATE',
@@ -611,7 +610,7 @@ export class ReservationService {
           updatedAt: new Date(),
         })
         const saved = await manager.save(row)
-        if (['pending', 'confirmed', 'checked_in'].includes(saved.status))
+        if (['confirmed', 'checked_in'].includes(saved.status))
           await assignBeds(
             manager,
             saved,
@@ -637,7 +636,7 @@ export class ReservationService {
   async command(
     context: AuthContext,
     id: string,
-    action: 'confirm' | 'cancel' | 'no-show',
+    action: 'cancel' | 'no-show',
     raw: unknown,
   ): Promise<ReservationResponse> {
     const parsed = reservationStatusCommandSchema.safeParse(raw)
@@ -648,22 +647,14 @@ export class ReservationService {
       async (manager) => {
         const row = await lockReservation(manager, context.camping.id, id)
         const target: ReservationStatus =
-          action === 'confirm'
-            ? 'confirmed'
-            : action === 'cancel'
-              ? 'cancelled'
-              : 'no_show'
+          action === 'cancel' ? 'cancelled' : 'no_show'
         if (row.status === target) return reservationView(manager, context, row)
         if (row.version !== parsed.data.version)
           throw conflict(
             'La reserva cambió; actualiza la pantalla',
             'STALE_RESERVATION',
           )
-        const allowed =
-          action === 'confirm'
-            ? row.status === 'pending'
-            : row.status === 'pending' || row.status === 'confirmed'
-        if (!allowed)
+        if (row.status !== 'confirmed')
           throw conflict(
             'La transición de estado no es válida',
             'INVALID_RESERVATION_STATE',
@@ -681,15 +672,6 @@ export class ReservationService {
         row.version = nextReservationVersion(row.version)
         row.updatedAt = new Date()
         const saved = await manager.save(row)
-        if (['pending', 'confirmed', 'checked_in'].includes(saved.status))
-          await assignBeds(
-            manager,
-            saved,
-            humanOccupancy(
-              saved,
-              saved.priceSnapshot.infantsConsumeCapacity ?? false,
-            ),
-          )
         await appendReservationMutation(
           manager,
           context,
@@ -880,7 +862,7 @@ export class ReservationService {
     row.version = nextReservationVersion(row.version)
     row.updatedAt = new Date()
     const saved = await manager.save(row)
-    if (['pending', 'confirmed', 'checked_in'].includes(saved.status))
+    if (['confirmed', 'checked_in'].includes(saved.status))
       await assignBeds(
         manager,
         saved,

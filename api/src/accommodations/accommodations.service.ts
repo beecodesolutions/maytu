@@ -71,11 +71,7 @@ function assertPricingPrecision(
       check(rule.benefit.value)
 }
 
-const activeReservationStatuses = [
-  'pending',
-  'confirmed',
-  'checked_in',
-] as const
+const activeReservationStatuses = ['confirmed', 'checked_in'] as const
 const reservationStatusFilter = In([...activeReservationStatuses])
 
 const dateRangeOverlap = (start: string, end: string) => ({

@@ -320,7 +320,7 @@ test('accommodation CRUD isolates tenants and enforces inventory constraints', a
        check_in_date, check_out_date, adults, children, infants, status,
        source, notes, price_snapshot, version, idempotency_key)
      VALUES ($1, $2, $3, $4, 'Active guest', '2099-02-01', '2099-02-03',
-       2, 0, 0, 'pending', 'manual', '', $5, 1, $6)`,
+       2, 0, 0, 'confirmed', 'manual', '', $5, 1, $6)`,
     [
       randomUUID(),
       ids.camping,

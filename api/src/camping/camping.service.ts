@@ -155,7 +155,7 @@ export class CampingService {
             )
           const hasOpenReservation = await manager.existsBy(ReservationEntity, {
             campingId: camping.id,
-            status: In(['pending', 'confirmed', 'checked_in']),
+            status: In(['confirmed', 'checked_in']),
           })
           if (hasOpenReservation)
             throw conflict(

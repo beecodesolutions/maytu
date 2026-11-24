@@ -1,3 +1,4 @@
+import { ConfirmReservationsOnCreate1760000008000 } from './migrations/1760000008000-ConfirmReservationsOnCreate'
 import { AccommodationBedEntity } from './entities/accommodation-bed.entity'
 import { FlexiblePricingAndBeds1760000007000 } from './migrations/1760000007000-FlexiblePricingAndBeds'
 import 'reflect-metadata'
@@ -81,6 +82,7 @@ export function createDataSource() {
       MoneyPrecision1760000005000,
       UnitCapacity1760000006000,
       FlexiblePricingAndBeds1760000007000,
+      ConfirmReservationsOnCreate1760000008000,
     ],
     synchronize: false,
     migrationsRun: false,

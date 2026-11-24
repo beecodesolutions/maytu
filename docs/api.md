@@ -16,13 +16,12 @@ Base `/api`. JSON; cookie de sesión `camping_session`. Todos los endpoints de n
 | POST   | `/stays/:id/payments`                        | Registra pago parcial o anticipo idempotente                             |
 | POST   | `/stays/:id/close`                           | Cierra con `{ departureDate, version, payment? }`; saldo final cero      |
 | POST   | `/reservations/quote`                        | Cotiza una reserva sin crearla ni consumir inventario                    |
-| POST   | `/reservations`                              | Crea una reserva pendiente con total aceptado                            |
+| POST   | `/reservations`                              | Crea una reserva confirmada con total aceptado                           |
 | GET    | `/reservations`                              | Lista reservas por estado, tipo y rango, con paginación                  |
 | GET    | `/reservations/:id`                          | Consulta una reserva, sus pagos y cuenta                                 |
 | POST   | `/reservations/:id/quote`                    | Cotiza una edición con la versión actual                                 |
-| PATCH  | `/reservations/:id`                          | Edita una reserva pendiente o confirmada                                 |
-| POST   | `/reservations/:id/confirm`                  | Confirma una reserva pendiente                                           |
-| POST   | `/reservations/:id/cancel`                   | Cancela una reserva pendiente o confirmada                               |
+| PATCH  | `/reservations/:id`                          | Edita una reserva confirmada                                             |
+| POST   | `/reservations/:id/cancel`                   | Cancela una reserva confirmada                                           |
 | POST   | `/reservations/:id/no-show`                  | Marca no presentado desde la fecha de entrada                            |
 | POST   | `/reservations/:id/check-in/quote`           | Cotiza el ingreso con fecha real y versión actual                        |
 | POST   | `/reservations/:id/check-in`                 | Ingresa la reserva y crea su estadía vinculada                           |
@@ -108,8 +107,8 @@ Cambiar de tipo usa la configuración vigente del nuevo tipo. La auditoría y
 el outbox se escriben junto con cada mutación exitosa y registran al usuario de
 la sesión; los reintentos idempotentes no crean una segunda mutación.
 
-Una reserva pendiente consume inventario desde su creación. Solo las
-pendientes se confirman; pendientes y confirmadas pueden cancelarse. El
+Una reserva se crea confirmada y consume inventario desde su creación. Las
+reservas confirmadas pueden cancelarse. El
 no-show puede marcarse desde la fecha de entrada en la zona horaria del
 camping. Las transiciones y ediciones llevan `version` positiva y aumentan la
 versión en cada mutación. Repetir una transición que ya alcanzó su estado
@@ -117,10 +116,10 @@ objetivo devuelve la última representación sin crear otro evento; una versión
 obsoleta responde 409. Repetir una creación con la misma clave y payload
 normalizado devuelve la reserva existente; cambiar el payload responde 409.
 
-Cada reserva admite pagos nuevos mientras está pendiente o confirmada. Los
+Cada reserva admite pagos nuevos mientras está confirmada. Los
 medios son `cash`, `transfer` y `card`; se permiten varios pagos y un excedente
 se muestra como crédito. Cancelar conserva sus pagos y sus cargos. Un pago
-puede anularse mientras la reserva esté pendiente, confirmada, cancelada o
+puede anularse mientras la reserva esté confirmada, cancelada o
 marcada no-show; la anulación conserva actor, fecha y motivo y no ejecuta una
 devolución bancaria. Antes del ingreso, esta regla aplica a los pagos propios
 de la reserva. Repetir la misma clave de idempotencia con el payload

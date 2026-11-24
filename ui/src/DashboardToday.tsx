@@ -114,15 +114,6 @@ function useTodayData(
     void Promise.all([
       allPages((page) =>
         readReservations({
-          status: 'pending',
-          checkInDate: today,
-          checkOutDate: tomorrow,
-          page,
-          pageSize: 100,
-        }).unwrap(),
-      ),
-      allPages((page) =>
-        readReservations({
           status: 'confirmed',
           checkInDate: today,
           checkOutDate: tomorrow,
@@ -141,17 +132,13 @@ function useTodayData(
         readStays({ status: 'active', page, pageSize: 100 }).unwrap(),
       ),
     ])
-      .then(([pending, confirmed, checkedInReservations, stays]) => {
+      .then(([confirmed, checkedInReservations, stays]) => {
         if (!active) return
         setState({
           status: 'ready',
           data: {
-            arrivals: [...pending, ...confirmed]
-              .filter(
-                (reservation) =>
-                  reservation.checkInDate === today &&
-                  reservation.status === 'confirmed',
-              )
+            arrivals: confirmed
+              .filter((reservation) => reservation.checkInDate === today)
               .sort((left, right) =>
                 left.responsibleName.localeCompare(right.responsibleName),
               ),
@@ -211,14 +198,12 @@ function ReservationRow({
   typeNames,
   typeModes,
   unitNames,
-  language,
   onCheckIn,
 }: {
   reservation: ReservationResponse
   typeNames: Map<string, string>
   typeModes: Map<string, string>
   unitNames: Map<string, string>
-  language: string
   onCheckIn: () => void
 }) {
   const { t } = useTranslation()
@@ -255,13 +240,6 @@ function ReservationRow({
             <LucideIcon icon={LogIn} />
           </IconButton>
         </Tooltip>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={uiStyles.desktopBlock}
-        >
-          {formatDate(reservation.checkOutDate, language)}
-        </Typography>
       </Stack>
     </ListItem>
   )
@@ -419,7 +397,6 @@ export default function DashboardToday({
                     typeNames={typeNames}
                     typeModes={typeModes}
                     unitNames={unitNames}
-                    language={i18n.language}
                     onCheckIn={() =>
                       openWorkspaceDialog({
                         kind: 'reservation-check-in',

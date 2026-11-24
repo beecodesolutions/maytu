@@ -208,9 +208,11 @@ export default function CampingWorkspace({
       )}
       {dialog?.kind === 'reservation-detail' && profile && (
         <ReservationDetailDialog
+          key={dialog.id}
           id={dialog.id}
           profile={profile}
           onClose={closeWorkspaceDialog}
+          onCheckInSuccess={() => setTodayRefreshKey((value) => value + 1)}
         />
       )}
       <WorkspaceNavigation

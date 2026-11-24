@@ -54,9 +54,9 @@ bloqueos describen unidad, rango y motivo, sin huésped ni cobros.
 
 ## Ciclo de vida y disponibilidad
 
-Pendiente → confirmada → ingresada → finalizada. Pendiente y confirmada pueden pasar a cancelada o no presentado. El ingreso exige confirmación y produce como máximo una estadía, idempotentemente. No se reabren estados terminales en esta entrega.
+Confirmada → ingresada → finalizada. Una reserva confirmada puede pasar a cancelada o no presentada. El ingreso exige confirmación y produce como máximo una estadía, idempotentemente. No se reabren estados terminales en esta entrega.
 
-Pendientes y confirmadas consumen inventario. No hay vencimiento automático ni liberación por ausencia del huésped. Cancelación y no presentado liberan inventario explícitamente. Las reservas ingresadas conservan su asignación hasta la salida acordada; presencia real y disponibilidad prevista se muestran como conceptos distintos. Una estadía física abierta también bloquea su unidad aunque la salida planificada ya haya pasado.
+Las reservas se crean confirmadas y consumen inventario desde ese momento. Cancelación y no presentado liberan inventario explícitamente. Las reservas ingresadas conservan su asignación hasta la salida acordada; presencia real y disponibilidad prevista se muestran como conceptos distintos. Una estadía física abierta también bloquea su unidad aunque la salida planificada ya haya pasado.
 
 El ingreso desde reserva requiere una fecha real igual o posterior a la entrada
 reservada, no posterior al día local actual y anterior a la salida reservada.
@@ -128,9 +128,9 @@ El piloto anterior no tiene usuarios activos: no se exige compatibilidad con sus
 
 ## API de reservas de la etapa 3
 
-La API publica once operaciones con `operationId` estable: `reservationQuoteCreate`,
+Las operaciones de cotización, gestión y pagos tienen un `operationId` estable: `reservationQuoteCreate`,
 `reservationCreate`, `reservationList`, `reservationRead`,
-`reservationQuoteUpdate`, `reservationUpdate`, `reservationConfirm`,
+`reservationQuoteUpdate`, `reservationUpdate`,
 `reservationCancel`, `reservationNoShow`, `reservationPaymentRecord` y
 `reservationPaymentVoid`. Todas resuelven el camping desde la sesión. La
 consulta de lista acepta `status`, `typeId`, un rango completo de fechas y
@@ -170,9 +170,8 @@ outbox.
 pero no acepta `acceptedTotalMinor`; devuelve `reservationId`, `version` y el
 snapshot previsto. `PATCH /api/reservations/:id` aplica los mismos campos más
 el total aceptado opcional, que el servicio exige solo cuando el precio
-afecta el reemplazo. No existe un PATCH de estado. Los comandos de confirmar,
-cancelar y no-show reciben exclusivamente `version`. Confirmar solo opera en
-pendientes; cancelar y no-show operan en pendientes o confirmadas. No-show no
+afecta el reemplazo. No existe un PATCH de estado. Los comandos de cancelar y no-show reciben exclusivamente `version` y operan
+en reservas confirmadas. No-show no
 puede marcarse antes de `checkInDate` en la zona local. Una repetición que ya
 alcanzó el estado pedido devuelve la representación actual sin otro evento;
 las demás versiones obsoletas responden 409. Las versiones aumentan en toda
@@ -186,8 +185,8 @@ La respuesta de reserva incluye todos los pagos, incluso los anulados, y una
 cuenta congelada con `totalMinor`, `paidMinor` y `balanceMinor`. No incluye
 `asOfDate`: el total es el precio acordado completo. Se permiten pagos en
 `cash`, `transfer` y `card`, múltiples pagos y crédito por sobrepago. Los
-pagos nuevos solo se registran en pendientes o confirmadas. Cancelar conserva
-pagos y cargos. Anular se permite en pendientes, confirmadas, canceladas y
+pagos nuevos solo se registran en reservas confirmadas. Cancelar conserva
+pagos y cargos. Anular se permite en confirmadas, canceladas y
 no-show; mantiene motivo, actor y fecha y no inicia devoluciones bancarias.
 Los pagos vinculados a estadía o check-in/check-out se describen en la etapa 4.
 Repetir la misma clave con el payload exacto es idempotente incluso después de
@@ -263,7 +262,7 @@ El documento de rutas debe describir solo endpoints implementados, con request/r
 
 La pantalla Reservas ofrece «Nueva reserva» desde el botón flotante. La recepción
 carga alojamiento, fechas, huéspedes y contacto, consulta disponibilidad/precio y
-acepta el total mostrado antes de guardar una reserva pendiente. Cotizar no retiene
+acepta el total mostrado antes de guardar una reserva confirmada. Cotizar no retiene
 inventario. Cambiar fechas, tipo, unidad o huéspedes exige una nueva cotización.
 
 Cada unidad requiere `maxOccupancy`, un entero positivo; PATCH permite conservarlo

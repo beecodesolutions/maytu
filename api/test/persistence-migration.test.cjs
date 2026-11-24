@@ -548,3 +548,45 @@ test('unused flexible pricing migration can downgrade and reapply without changi
     await runner.release()
   }
 })
+
+test('reservation migration confirms existing pending reservations and rejects the old status', async () => {
+  const {
+    ConfirmReservationsOnCreate1760000008000,
+  } = require('../dist/database/migrations/1760000008000-ConfirmReservationsOnCreate')
+  const runner = dataSource.createQueryRunner()
+  await runner.connect()
+  await runner.startTransaction()
+  try {
+    const migration = new ConfirmReservationsOnCreate1760000008000()
+    await migration.down(runner)
+    await runner.query(
+      'UPDATE reservations SET status = DEFAULT, version = 3 WHERE id = $1',
+      [ids.reservationA],
+    )
+    const [pending] = await runner.query(
+      'SELECT status, version, price_snapshot FROM reservations WHERE id = $1',
+      [ids.reservationA],
+    )
+    assert.equal(pending.status, 'pending')
+    await migration.up(runner)
+    const [confirmed] = await runner.query(
+      'SELECT status, version, price_snapshot FROM reservations WHERE id = $1',
+      [ids.reservationA],
+    )
+    assert.deepEqual(confirmed, { ...pending, status: 'confirmed', version: 4 })
+    const [unchanged] = await runner.query(
+      'SELECT status, version FROM reservations WHERE id = $1',
+      [ids.reservationUnlimited],
+    )
+    assert.deepEqual(unchanged, { status: 'confirmed', version: 1 })
+    await assert.rejects(
+      runner.query("UPDATE reservations SET status = 'pending' WHERE id = $1", [
+        ids.reservationA,
+      ]),
+      { code: '23514' },
+    )
+  } finally {
+    await runner.rollbackTransaction()
+    await runner.release()
+  }
+})

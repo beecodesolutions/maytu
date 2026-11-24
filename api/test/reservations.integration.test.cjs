@@ -290,7 +290,7 @@ test('search returns all priced offers, advisory warnings and tenant isolation w
   }
 })
 
-test('quotes and creates a pending reservation with a frozen price', async () => {
+test('quotes and creates a confirmed reservation with a frozen price', async () => {
   const quote = await request('/api/reservations/quote', {
     method: 'POST',
     origin: ORIGIN,
@@ -308,7 +308,7 @@ test('quotes and creates a pending reservation with a frozen price', async () =>
     }),
   })
   assert.equal(created.response.status, 201)
-  assert.equal(created.value.status, 'pending')
+  assert.equal(created.value.status, 'confirmed')
   assert.equal(created.value.priceSnapshot.totalMinor, 3000)
   assert.equal(created.value.account.totalMinor, 3000)
   const offers = await request('/api/reservations/search', {
@@ -585,7 +585,7 @@ test('concurrent block and reservation compete under the same inventory lock', a
   )
 })
 
-test('confirm, cancel and no-show use versions and cancellation releases inventory', async () => {
+test('cancel and no-show use versions and cancellation releases inventory', async () => {
   const created = await createReservation({
     checkInDate: '2035-01-01',
     checkOutDate: '2035-01-02',
@@ -593,23 +593,13 @@ test('confirm, cancel and no-show use versions and cancellation releases invento
     idempotencyKey: randomUUID(),
   })
   assert.equal(created.response.status, 201)
-  const confirmed = await request(
-    `/api/reservations/${created.value.id}/confirm`,
-    {
-      method: 'POST',
-      origin: ORIGIN,
-      cookie,
-      body: { version: created.value.version },
-    },
-  )
-  assert.equal(confirmed.response.status, 201)
   const cancelled = await request(
     `/api/reservations/${created.value.id}/cancel`,
     {
       method: 'POST',
       origin: ORIGIN,
       cookie,
-      body: { version: confirmed.value.version },
+      body: { version: created.value.version },
     },
   )
   assert.equal(cancelled.response.status, 201)
@@ -771,7 +761,7 @@ test('children overflow is advisory and infants do not consume capacity by defau
     acceptedTotalMinor: quote.value.priceSnapshot.totalMinor,
   })
   assert.equal(created.response.status, 201)
-  assert.equal(created.value.status, 'pending')
+  assert.equal(created.value.status, 'confirmed')
   const normal = await request('/api/reservations/quote', {
     method: 'POST',
     origin: ORIGIN,

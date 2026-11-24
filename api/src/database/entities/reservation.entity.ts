@@ -17,12 +17,7 @@ import { PaymentEntity } from './payment.entity'
 import type { ReservationPriceSnapshot } from '@camping/contracts'
 
 export type ReservationStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'checked_in'
-  | 'checked_out'
-  | 'cancelled'
-  | 'no_show'
+  'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show'
 
 @Entity({ name: 'reservations' })
 @Unique('uq_reservations_camping_id', ['campingId', 'id'])
@@ -97,7 +92,7 @@ export class ReservationEntity {
   @Column({ name: 'capacity_override_reason', type: 'text', nullable: true })
   capacityOverrideReason!: string | null
 
-  @Column({ type: 'varchar', length: 16, default: 'pending' })
+  @Column({ type: 'varchar', length: 16, default: 'confirmed' })
   status!: ReservationStatus
 
   @Column({ type: 'varchar', length: 100, default: 'manual' })

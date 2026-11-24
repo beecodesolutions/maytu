@@ -5,10 +5,12 @@ import type {
   Stay,
 } from '@camping/contracts'
 import {
+  aggregateAvailabilityTone,
   availabilityForDate,
   dedupeLinkedStays,
   monthRange,
   shiftMonth,
+  type AvailabilitySummary,
 } from './calendar'
 import { summarizeOccupancy } from './individualOccupancy'
 
@@ -58,6 +60,39 @@ describe('availability calendar helpers', () => {
       tone: 'none',
       available: 0,
     })
+  })
+
+  it('combines availability without treating unlimited inventory as sold out', () => {
+    const full = {
+      tone: 'none',
+      available: 0,
+      total: 3,
+      reserved: 3,
+      blocked: 0,
+    } satisfies AvailabilitySummary
+    const free = {
+      ...full,
+      tone: 'free',
+      available: 3,
+      reserved: 0,
+    } satisfies AvailabilitySummary
+    const unlimited = {
+      tone: 'unlimited',
+      available: null,
+      total: null,
+      reserved: 0,
+      blocked: 0,
+    } satisfies AvailabilitySummary
+
+    expect(aggregateAvailabilityTone([])).toBeUndefined()
+    expect(aggregateAvailabilityTone([full, full])).toBe('none')
+    expect(aggregateAvailabilityTone([full, free])).toBe('partial')
+    expect(aggregateAvailabilityTone([full, unlimited])).toBe('partial')
+    expect(aggregateAvailabilityTone([free, unlimited])).toBe('free')
+    expect(aggregateAvailabilityTone([unlimited])).toBe('unlimited')
+    expect(aggregateAvailabilityTone([{ ...unlimited, reserved: 1 }])).toBe(
+      'partial',
+    )
   })
 
   it('keeps future inventory bookings out of current occupancy', () => {

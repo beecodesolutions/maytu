@@ -392,7 +392,7 @@ test('rejects conflicting keys, foreign resources, and future dates', async () =
        check_in_date, check_out_date, adults, children, infants, status,
        price_snapshot, idempotency_key)
      VALUES ($1, $2, $3, $4, 'Foreign reservation', '2027-02-01', '2027-02-03',
-       1, 0, 0, 'pending', $5, $6)`,
+       1, 0, 0, 'confirmed', $5, $6)`,
     [
       foreignReservationId,
       ids.foreignCamping,

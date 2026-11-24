@@ -7,13 +7,15 @@ import {
   Box,
   Button,
   Chip,
+  ListItemButton,
+  MenuItem,
   Stack,
-  ToggleButton,
-  ToggleButtonGroup,
+  TextField,
   Typography,
 } from '@mui/material'
 import Calendar, { type CalendarDayStatus } from './components/Calendar'
 import CalendarLegend from './components/CalendarLegend'
+import { openWorkspaceDialog } from './app/workspaceDialog'
 import AccommodationIdentity from './AccommodationIdentity'
 import { buildAccommodationIdentity } from './services/accommodationIdentity'
 import type {
@@ -30,6 +32,7 @@ import {
 } from './services/api'
 import {
   addDays,
+  aggregateAvailabilityTone,
   availabilityForDate,
   monthKey,
   monthRange,
@@ -38,29 +41,104 @@ import {
 } from './services/calendar'
 
 type Props = { profile: CampingProfile; refreshKey?: number }
-type SelectedDay = { date: string; typeId: string } | null
+const allTypes = 'all'
+
+type TypeAvailability = {
+  type: AccommodationType
+  summary: AvailabilitySummary
+}
 
 type Translate = ReturnType<typeof useTranslation>['t']
 
-function statusLabel(summary: AvailabilitySummary | null, t: Translate) {
-  if (!summary) return t('calendar.noData')
-  if (summary.tone === 'free') return t('calendar.free')
-  if (summary.tone === 'partial') return t('calendar.partial')
-  if (summary.tone === 'none') return t('calendar.none')
-  return t('calendar.unlimited')
+function statusLabel(
+  tone: Exclude<AvailabilitySummary['tone'], 'unlimited'>,
+  t: Translate,
+) {
+  if (tone === 'free') return t('calendar.free')
+  if (tone === 'partial') return t('calendar.partial')
+  return t('calendar.none')
+}
+
+function TypeSummary({ type, summary }: TypeAvailability) {
+  const { t } = useTranslation()
+  if (type.inventoryMode === 'individual' && summary.total === 1) {
+    const status =
+      summary.reserved > 0
+        ? { label: t('calendar.occupiedUnit'), color: 'warning' as const }
+        : summary.blocked > 0
+          ? { label: t('calendar.blockedUnit'), color: 'error' as const }
+          : { label: t('calendar.free'), color: 'success' as const }
+
+    return (
+      <Box sx={uiStyles.dayDetailChips}>
+        <Chip {...status} size="small" />
+      </Box>
+    )
+  }
+
+  return summary.tone === 'unlimited' ? (
+    <Typography variant="body2" color="text.secondary">
+      {t('calendar.unlimitedReservations', { count: summary.reserved })}
+    </Typography>
+  ) : (
+    <Box sx={uiStyles.dayDetailChips}>
+      <Chip
+        label={t(
+          type.inventoryMode === 'shared'
+            ? 'pricing.freeBeds'
+            : 'calendar.freeCount',
+          {
+            count: summary.available ?? 0,
+          },
+        )}
+        color="success"
+        size="small"
+      />
+      {summary.reserved > 0 && (
+        <Chip
+          label={t(
+            type.inventoryMode === 'shared'
+              ? 'pricing.occupiedBeds'
+              : 'calendar.occupiedCount',
+            {
+              count: summary.reserved,
+            },
+          )}
+          color="warning"
+          size="small"
+        />
+      )}
+      {summary.blocked > 0 && (
+        <Chip
+          label={t(
+            type.inventoryMode === 'shared'
+              ? 'pricing.blockedBeds'
+              : 'calendar.blockedCount',
+            {
+              count: summary.blocked,
+            },
+          )}
+          color="error"
+          size="small"
+        />
+      )}
+    </Box>
+  )
 }
 
 function DayDetail({
-  selected,
-  summary,
-  type,
+  date,
+  typeId,
+  availability,
+  availabilityPending,
   typeNames,
   typeModes,
   unitNames,
 }: {
-  selected: SelectedDay
-  summary: AvailabilitySummary | null
-  type: AccommodationType | undefined
+  date: string
+  typeId: string | undefined
+  availability: TypeAvailability[]
+  availabilityPending: boolean
   typeNames: Map<string, string>
   typeModes: Map<string, string>
   unitNames: Map<string, string>
@@ -71,22 +149,19 @@ function DayDetail({
     status: 'idle' | 'loading' | 'ready' | 'error'
     items: ReservationResponse[]
   }>({ status: 'loading', items: [] })
-  const selectedDate = selected?.date
-  const selectedTypeId = selected?.typeId
   useEffect(() => {
-    if (!selectedDate || !selectedTypeId) return
     let active = true
     void (async () => {
       try {
         const items: ReservationResponse[] = []
-        const statuses = new Set(['pending', 'confirmed', 'checked_in'])
+        const statuses = new Set(['confirmed', 'checked_in'])
         let page = 1
         let total = 0
         do {
           const result = await readReservations({
-            typeId: selectedTypeId,
-            checkInDate: selectedDate,
-            checkOutDate: addDays(selectedDate, 1),
+            ...(typeId === undefined ? {} : { typeId }),
+            checkInDate: date,
+            checkOutDate: addDays(date, 1),
             page,
             pageSize: 100,
           }).unwrap()
@@ -104,8 +179,7 @@ function DayDetail({
     return () => {
       active = false
     }
-  }, [readReservations, selectedDate, selectedTypeId])
-  if (!selected || !type) return null
+  }, [readReservations, date, typeId])
   const currentReservations = reservationState.items
   return (
     <SectionCard
@@ -113,60 +187,38 @@ function DayDetail({
       title={new Intl.DateTimeFormat(i18n.language, {
         dateStyle: 'full',
         timeZone: 'UTC',
-      }).format(new Date(`${selected.date}T12:00:00Z`))}
+      }).format(new Date(`${date}T12:00:00Z`))}
     >
       <Box sx={uiStyles.dayDetailBox}>
-        {!summary ? (
-          <Typography color="text.secondary" sx={uiStyles.bottomGap}>
-            {t('common.loading')}
-          </Typography>
-        ) : summary.tone === 'unlimited' ? (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={uiStyles.bottomGap}
-          >
-            {t('calendar.unlimitedReservations', { count: summary.reserved })}
-          </Typography>
-        ) : (
-          <Stack {...uiProps.rowSmall} sx={uiStyles.dayDetailStack2}>
-            <Chip
-              label={t(
-                type?.inventoryMode === 'shared'
-                  ? 'pricing.freeBeds'
-                  : 'calendar.freeCount',
-                {
-                  count: summary?.available ?? 0,
-                },
-              )}
-              color="success"
-              size="small"
-            />
-            <Chip
-              label={t(
-                type?.inventoryMode === 'shared'
-                  ? 'pricing.occupiedBeds'
-                  : 'calendar.occupiedCount',
-                {
-                  count: summary?.reserved ?? 0,
-                },
-              )}
-              color="warning"
-              size="small"
-            />
-            <Chip
-              label={t(
-                type?.inventoryMode === 'shared'
-                  ? 'pricing.blockedBeds'
-                  : 'calendar.blockedCount',
-                {
-                  count: summary?.blocked ?? 0,
-                },
-              )}
-              color="error"
-              size="small"
-            />
-          </Stack>
+        {availabilityPending && (
+          <Typography color="text.secondary">{t('common.loading')}</Typography>
+        )}
+        {availability.length > 0 && (
+          <Box sx={uiStyles.dayDetailTypes(typeId === undefined)}>
+            {availability.map(({ type, summary }) => (
+              <Stack
+                key={type.id}
+                {...(typeId === undefined
+                  ? uiProps.stackSmall
+                  : uiProps.rowMedium)}
+                useFlexGap
+                sx={
+                  typeId === undefined
+                    ? undefined
+                    : uiStyles.dayDetailFilteredType
+                }
+              >
+                <Typography
+                  component="span"
+                  variant={typeId === undefined ? 'body1' : 'h3'}
+                  sx={typeId === undefined ? uiStyles.boldText : undefined}
+                >
+                  {type.name}
+                </Typography>
+                <TypeSummary type={type} summary={summary} />
+              </Stack>
+            ))}
+          </Box>
         )}
         {reservationState.status === 'loading' && (
           <Typography color="text.secondary">{t('common.loading')}</Typography>
@@ -182,7 +234,17 @@ function DayDetail({
           )}
         <Stack {...uiProps.stackMedium}>
           {currentReservations.map((reservation) => (
-            <Box key={reservation.id} sx={uiStyles.availabilityCalendarBox2}>
+            <ListItemButton
+              key={reservation.id}
+              disableGutters
+              sx={uiStyles.dayDetailReservationButton}
+              onClick={() =>
+                openWorkspaceDialog({
+                  kind: 'reservation-detail',
+                  id: reservation.id,
+                })
+              }
+            >
               <Stack {...uiProps.row} sx={uiStyles.availabilityCalendarStack}>
                 <Typography sx={uiStyles.boldText}>
                   {reservation.responsibleName}
@@ -213,7 +275,7 @@ function DayDetail({
               <Typography variant="caption" color="text.secondary">
                 {reservation.checkInDate} → {reservation.checkOutDate}
               </Typography>
-            </Box>
+            </ListItemButton>
           ))}
         </Stack>
       </Box>
@@ -228,34 +290,22 @@ export default function AvailabilityCalendar({
   const { t } = useTranslation()
   const today = todayInTimezone(profile.timezone)
   const [month, setMonth] = useState(monthKey(today))
-  const [selectedType, setSelectedType] = useState<string>('')
-  const [selectedDay, setSelectedDay] = useState<SelectedDay>(null)
+  const [selectedType, setSelectedType] = useState(allTypes)
+  const [selectedDate, setSelectedDate] = useState('')
   const range = useMemo(() => monthRange(month), [month])
   const types = useAccommodationTypesQuery()
   const units = useAccommodationUnitsQuery()
-  const enabledTypes = useMemo(
-    () => (types.data ?? []).filter((type) => type.enabled),
-    [types.data],
-  )
-  const preferredType = useMemo(
-    () =>
-      enabledTypes.find((type) => type.inventoryMode === 'individual') ??
-      enabledTypes[0],
-    [enabledTypes],
-  )
-  const activeTypeId =
-    enabledTypes.find((type) => type.id === selectedType)?.id ??
-    preferredType?.id ??
-    ''
+  const enabledTypes = (types.data ?? []).filter((type) => type.enabled)
+  const displayedType = enabledTypes.find((type) => type.id === selectedType)
+  const activeTypeId = displayedType?.id
   const availability = useAvailabilityQuery(
     {
       checkInDate: range.start,
       checkOutDate: range.end,
-      ...(activeTypeId ? { typeId: activeTypeId } : {}),
+      ...(activeTypeId === undefined ? {} : { typeId: activeTypeId }),
     },
-    { skip: enabledTypes.length === 0 },
+    { skip: !types.data?.length },
   )
-  const displayedType = enabledTypes.find((type) => type.id === activeTypeId)
   const unitNames = useMemo(
     () => new Map((units.data ?? []).map((unit) => [unit.id, unit.name])),
     [units.data],
@@ -266,32 +316,42 @@ export default function AvailabilityCalendar({
       new Map((types.data ?? []).map((type) => [type.id, type.inventoryMode])),
     [types.data],
   )
-  const selectedTypeData = availability.currentData?.types ?? []
-  const selectedAccommodationType = enabledTypes.find(
-    (type) => type.id === selectedDay?.typeId,
+  const visibleDate = selectedDate.startsWith(month)
+    ? selectedDate
+    : month === monthKey(today)
+      ? today
+      : range.start
+  const displayedTypes = displayedType ? [displayedType] : enabledTypes
+  const availabilityByType = new Map(
+    availability.currentData?.types.map((item) => [item.typeId, item]),
   )
-  const visibleSelectedDay =
-    activeTypeId &&
-    selectedAccommodationType?.id === activeTypeId &&
-    selectedDay?.date.startsWith(month)
-      ? selectedDay
-      : activeTypeId
-        ? {
-            date: month === monthKey(today) ? today : range.start,
-            typeId: activeTypeId,
-          }
-        : null
-  const visibleSummary = visibleSelectedDay
-    ? availabilityForDate(
-        selectedTypeData.find(
-          (item) => item.typeId === visibleSelectedDay.typeId,
-        ),
-        visibleSelectedDay.date,
-      )
-    : null
-  const visibleAccommodationType = enabledTypes.find(
-    (type) => type.id === visibleSelectedDay?.typeId,
-  )
+  const availabilityByDate = range.days
+    .filter((day) => day.inMonth)
+    .map(({ date }) => ({
+      date,
+      typeSummaries: displayedTypes.flatMap((type) => {
+        const summary = availabilityForDate(
+          availabilityByType.get(type.id),
+          date,
+        )
+        return summary ? [{ type, summary }] : []
+      }),
+    }))
+
+  const days: Record<string, CalendarDayStatus> = {}
+  for (const { date, typeSummaries } of availabilityByDate) {
+    const summaries = typeSummaries.map(({ summary }) => summary)
+    const tone = displayedType
+      ? summaries[0]?.tone
+      : aggregateAvailabilityTone(summaries)
+    if (tone === 'unlimited') {
+      days[date] = {}
+    } else if (tone) {
+      days[date] = { tone, label: statusLabel(tone, t) }
+    } else if (!displayedType && availability.currentData) {
+      days[date] = { label: t('calendar.noData') }
+    }
+  }
 
   return (
     <Box sx={uiStyles.availabilityWorkspace}>
@@ -300,31 +360,39 @@ export default function AvailabilityCalendar({
         subtitle={t('navigation.reservationsHelp')}
       >
         <Box sx={uiStyles.availabilityToolbar}>
-          {enabledTypes.length > 0 && (
-            <ToggleButtonGroup
-              value={activeTypeId}
-              exclusive
-              onChange={(_, value: string | null) =>
-                value && setSelectedType(value)
-              }
-              aria-label={t('calendar.typeFilter')}
-              size="small"
-              sx={uiStyles.availabilityCalendarToggleButtonGroup}
-            >
-              {enabledTypes.map((type) => (
-                <ToggleButton key={type.id} value={type.id}>
-                  {type.name}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
+          {Boolean(types.data?.length) && (
+            <Box sx={uiStyles.availabilityTypeFilters}>
+              <Button
+                variant={activeTypeId ? 'outlined' : 'contained'}
+                size="small"
+                aria-pressed={!activeTypeId}
+                onClick={() => setSelectedType(allTypes)}
+              >
+                {t('calendar.allTypes')}
+              </Button>
+              <TextField
+                select
+                size="small"
+                fullWidth
+                label={t('reservationCreate.type')}
+                value={activeTypeId ?? ''}
+                disabled={enabledTypes.length === 0}
+                onChange={(event) => setSelectedType(event.target.value)}
+              >
+                {enabledTypes.map((type) => (
+                  <MenuItem key={type.id} value={type.id}>
+                    {type.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
           )}
           <Button
             size="small"
-            disabled={!activeTypeId}
+            disabled={!types.data?.length}
             onClick={() => {
               setMonth(monthKey(today))
-              if (activeTypeId)
-                setSelectedDay({ date: today, typeId: activeTypeId })
+              setSelectedDate(today)
             }}
           >
             {t('calendar.today')}
@@ -340,7 +408,7 @@ export default function AvailabilityCalendar({
               <Button
                 onClick={() => {
                   void types.refetch()
-                  void availability.refetch()
+                  if (!availability.isUninitialized) void availability.refetch()
                 }}
               >
                 {t('common.retry')}
@@ -354,52 +422,34 @@ export default function AvailabilityCalendar({
           <Alert severity="info">{t('calendar.empty')}</Alert>
         )}
         <Stack {...uiProps.stackMedium}>
-          {displayedType && (
+          {Boolean(types.data?.length) && (
             <Box component="section">
               <Calendar
                 mode="single"
                 today={today}
                 month={month}
-                selectedDate={visibleSelectedDay?.date}
+                selectedDate={visibleDate}
                 onMonthChange={setMonth}
-                onChange={(date) =>
-                  setSelectedDay({ date, typeId: displayedType.id })
-                }
-                days={Object.fromEntries(
-                  range.days
-                    .filter((day) => day.inMonth)
-                    .flatMap((day) => {
-                      const summary = availabilityForDate(
-                        selectedTypeData.find(
-                          (item) => item.typeId === displayedType.id,
-                        ),
-                        day.date,
-                      )
-                      return summary
-                        ? [
-                            [
-                              day.date,
-                              {
-                                tone: summary.tone,
-                                label: statusLabel(summary, t),
-                              } satisfies CalendarDayStatus,
-                            ],
-                          ]
-                        : []
-                    }),
-                )}
+                onChange={setSelectedDate}
+                days={days}
               />
             </Box>
           )}
           <CalendarLegend />
         </Stack>
       </SectionCard>
-      {visibleSelectedDay && (
+      {Boolean(types.data?.length) && (
         <DayDetail
-          key={`${visibleSelectedDay.date}:${visibleSelectedDay.typeId}:${refreshKey}`}
-          selected={visibleSelectedDay}
-          summary={visibleSummary}
-          type={visibleAccommodationType}
+          key={`${visibleDate}:${activeTypeId ?? allTypes}:${refreshKey}`}
+          date={visibleDate}
+          typeId={activeTypeId}
+          availability={
+            availabilityByDate.find(({ date }) => date === visibleDate)
+              ?.typeSummaries ?? []
+          }
+          availabilityPending={
+            availability.isFetching && !availability.currentData
+          }
           typeNames={typeNames}
           typeModes={typeModes}
           unitNames={unitNames}

@@ -132,6 +132,24 @@ export function availabilityForDate(
   }
 }
 
+export function aggregateAvailabilityTone(
+  summaries: AvailabilitySummary[],
+): AvailabilityTone | undefined {
+  if (!summaries.length) return undefined
+  const limited = summaries.filter(({ tone }) => tone !== 'unlimited')
+  const unlimited = summaries.filter(({ tone }) => tone === 'unlimited')
+  const hasUnlimitedReservations = unlimited.some(
+    ({ reserved }) => reserved > 0,
+  )
+
+  if (!limited.length) return hasUnlimitedReservations ? 'partial' : 'unlimited'
+  if (!unlimited.length && limited.every(({ tone }) => tone === 'none'))
+    return 'none'
+  if (!hasUnlimitedReservations && limited.every(({ tone }) => tone === 'free'))
+    return 'free'
+  return 'partial'
+}
+
 export function typeNameById(types: AccommodationType[]): Map<string, string> {
   return new Map(types.map((type) => [type.id, type.name]))
 }
