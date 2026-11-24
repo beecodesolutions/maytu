@@ -348,6 +348,8 @@ const es = {
     noReservations: 'No hay reservas para este día.',
     unlimitedReservations_one: '{{count}} reserva en este día.',
     unlimitedReservations_other: '{{count}} reservas en este día.',
+    occupiedUnit: 'Ocupada',
+    blockedUnit: 'Bloqueada',
     freeCount: '{{count}} libres',
     occupiedCount: '{{count}} ocupadas',
     blockedCount: '{{count}} bloqueadas',

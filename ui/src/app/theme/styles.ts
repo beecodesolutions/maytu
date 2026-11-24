@@ -850,6 +850,10 @@ export const uiStyles = {
     gap: 2,
     mb: 2,
   }),
+  dayDetailFilteredType: {
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  } satisfies SxProps<Theme>,
   dayDetailChips: {
     display: 'flex',
     flexWrap: 'wrap',

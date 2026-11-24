@@ -59,6 +59,21 @@ function statusLabel(
 
 function TypeSummary({ type, summary }: TypeAvailability) {
   const { t } = useTranslation()
+  if (type.inventoryMode === 'individual' && summary.total === 1) {
+    const status =
+      summary.reserved > 0
+        ? { label: t('calendar.occupiedUnit'), color: 'warning' as const }
+        : summary.blocked > 0
+          ? { label: t('calendar.blockedUnit'), color: 'error' as const }
+          : { label: t('calendar.free'), color: 'success' as const }
+
+    return (
+      <Box sx={uiStyles.dayDetailChips}>
+        <Chip {...status} size="small" />
+      </Box>
+    )
+  }
+
   return summary.tone === 'unlimited' ? (
     <Typography variant="body2" color="text.secondary">
       {t('calendar.unlimitedReservations', { count: summary.reserved })}
@@ -77,30 +92,34 @@ function TypeSummary({ type, summary }: TypeAvailability) {
         color="success"
         size="small"
       />
-      <Chip
-        label={t(
-          type.inventoryMode === 'shared'
-            ? 'pricing.occupiedBeds'
-            : 'calendar.occupiedCount',
-          {
-            count: summary.reserved,
-          },
-        )}
-        color="warning"
-        size="small"
-      />
-      <Chip
-        label={t(
-          type.inventoryMode === 'shared'
-            ? 'pricing.blockedBeds'
-            : 'calendar.blockedCount',
-          {
-            count: summary.blocked,
-          },
-        )}
-        color="error"
-        size="small"
-      />
+      {summary.reserved > 0 && (
+        <Chip
+          label={t(
+            type.inventoryMode === 'shared'
+              ? 'pricing.occupiedBeds'
+              : 'calendar.occupiedCount',
+            {
+              count: summary.reserved,
+            },
+          )}
+          color="warning"
+          size="small"
+        />
+      )}
+      {summary.blocked > 0 && (
+        <Chip
+          label={t(
+            type.inventoryMode === 'shared'
+              ? 'pricing.blockedBeds'
+              : 'calendar.blockedCount',
+            {
+              count: summary.blocked,
+            },
+          )}
+          color="error"
+          size="small"
+        />
+      )}
     </Box>
   )
 }
@@ -175,10 +194,25 @@ function DayDetail({
         {availability.length > 0 && (
           <Box sx={uiStyles.dayDetailTypes(typeId === undefined)}>
             {availability.map(({ type, summary }) => (
-              <Stack key={type.id} {...uiProps.stackSmall}>
-                {typeId === undefined && (
-                  <Typography sx={uiStyles.boldText}>{type.name}</Typography>
-                )}
+              <Stack
+                key={type.id}
+                {...(typeId === undefined
+                  ? uiProps.stackSmall
+                  : uiProps.rowMedium)}
+                useFlexGap
+                sx={
+                  typeId === undefined
+                    ? undefined
+                    : uiStyles.dayDetailFilteredType
+                }
+              >
+                <Typography
+                  component="span"
+                  variant={typeId === undefined ? 'body1' : 'h3'}
+                  sx={typeId === undefined ? uiStyles.boldText : undefined}
+                >
+                  {type.name}
+                </Typography>
                 <TypeSummary type={type} summary={summary} />
               </Stack>
             ))}
