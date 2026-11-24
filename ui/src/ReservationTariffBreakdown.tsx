@@ -59,7 +59,7 @@ function ChargeRow({
       <Box>
         <Typography variant="body2">{label}</Typography>
         {detail && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="textSecondary">
             {detail}
           </Typography>
         )}
@@ -184,7 +184,7 @@ export default function ReservationTariffBreakdown({
           const amount = breakdown.categoryCharges?.[name]
           if (
             amount === undefined ||
-            (price.basis === 'per_unit' && !includedOccupancy && amount === 0)
+            (price.basis === 'per_unit' && amount === 0)
           )
             return null
           const categoryAmounts = breakdown.nights.flatMap((n) =>
@@ -289,7 +289,7 @@ export default function ReservationTariffBreakdown({
               </Stack>
             ))}
             {breakdown.discountMinor > 0 && (
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="textSecondary">
                 {t('pricing.nightlyBeforeDiscount')}
               </Typography>
             )}

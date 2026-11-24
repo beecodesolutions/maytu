@@ -13,11 +13,17 @@ import { formatMoney } from './services/money'
 
 type Props = {
   quote: CreationQuote
+  accommodationTitle?: string
   today: string
   ageRanges?: AgeRanges
 }
 
-export default function ReservationReview({ quote, today, ageRanges }: Props) {
+export default function ReservationReview({
+  quote,
+  accommodationTitle = quote.accommodationName,
+  today,
+  ageRanges,
+}: Props) {
   const { t, i18n } = useTranslation()
   const price = quote.priceSnapshot
   const guests = reservationGuestGroups(quote.input)
@@ -31,7 +37,7 @@ export default function ReservationReview({ quote, today, ageRanges }: Props) {
       aria-label={t('reservationCreate.summary')}
     >
       <Box>
-        <Typography variant="h3">{quote.accommodationName}</Typography>
+        <Typography variant="h3">{accommodationTitle}</Typography>
         {quote.responsibleName && (
           <Typography variant="body1" sx={uiStyles.smallTopGap}>
             {quote.responsibleName}

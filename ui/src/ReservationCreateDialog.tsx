@@ -133,6 +133,12 @@ export default function ReservationCreateDialog({
     nightsDraft !== null &&
     departureForNights(checkInDate, nightsDraft) === null
   const selectedType = types.find((type) => type.id === typeId)
+  const accommodationTitle =
+    selectedType &&
+    units.filter((unit) => unit.enabled && unit.typeId === selectedType.id)
+      .length <= 1
+      ? selectedType.name
+      : selected?.accommodationName
   const filterUnits = typeFilter
     ? units.filter((unit) => unit.enabled && unit.typeId === typeFilter)
     : []
@@ -611,7 +617,7 @@ export default function ReservationCreateDialog({
               }
               sx={uiStyles.fieldsetReset}
             >
-              <Stack {...uiProps.stackForm}>
+              <Stack {...uiProps.stackForm} useFlexGap>
                 <Box hidden={step !== 0}>
                   <Stack {...uiProps.stackForm}>
                     <DateRangeCalendar
@@ -689,6 +695,7 @@ export default function ReservationCreateDialog({
                   <Stack {...uiProps.stackForm}>
                     <ReservationReview
                       quote={quote ?? selected}
+                      accommodationTitle={accommodationTitle}
                       ageRanges={profile.ageRanges}
                       today={todayInTimezone(profile.timezone)}
                     />
@@ -712,8 +719,8 @@ export default function ReservationCreateDialog({
                 <Box hidden={step !== 3}>
                   <Stack {...uiProps.stackForm}>
                     <Typography>
-                      {quote?.accommodationName} · {checkInDate} →{' '}
-                      {checkOutDate}
+                      {accommodationTitle ?? quote?.accommodationName} ·{' '}
+                      {checkInDate} → {checkOutDate}
                     </Typography>
                     <TextField
                       label={t('checkIn.responsibleName')}

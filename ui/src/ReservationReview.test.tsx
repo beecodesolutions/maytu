@@ -199,15 +199,15 @@ it('explains included guests, additional guests, pets, discount and agreed adjus
   ).replaceAll('\u00a0', ' ')
   for (const text of [
     'Desglose de tarifa',
-    'Incluye por noche: 2 adultos',
+    'Por unidad · Incluye por noche: 2 adultos',
     '1 adulto adicional',
-    'Sin cargo',
     'MXN 800 por noche × 2 noches',
     'Bloques de 2 noches',
     'Precio acordado',
     '1 mascota',
   ])
     expect(html).toContain(text)
+  expect(html).not.toContain('1 bebé adicional')
   expect(html).not.toContain('3 adultos adicionales')
   expect(html).not.toContain('Personas adicionales')
   expect(html).toContain('2.180')
